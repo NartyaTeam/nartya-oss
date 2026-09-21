@@ -6,7 +6,7 @@ export type ProviderRequest = {
   timeoutMs: number;
 };
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+export const DEFAULT_TIMEOUT_MS = 30_000;
 
 // Some hosts run on several extensions, including dead ones. Driven by the recipe: no
 // domain is written down here.

@@ -2,12 +2,13 @@ import http from "node:http";
 import https from "node:https";
 import { createDohHttpAgent, createDohHttpsAgent, dohAddresses } from "./doh.mts";
 import { createLogger } from "./log.mts";
-import { buildProviderRequest } from "./provider-request.mts";
+import { buildProviderRequest, DEFAULT_TIMEOUT_MS } from "./provider-request.mts";
 import { validateExternalUrl, type Check } from "./url-safety.mts";
 
 export type ProviderResponse = {
   url: string;
   status: number;
+  statusText: string;
   headers: http.IncomingHttpHeaders;
   stream: http.IncomingMessage;
 };
@@ -52,7 +53,7 @@ function isRetryable(error: unknown): boolean {
   return message?.includes("socket hang up") === true;
 }
 
-function checkExternal(url: string): Promise<Check> {
+export function checkExternal(url: string): Promise<Check> {
   return validateExternalUrl(url, dohAddresses);
 }
 
@@ -62,6 +63,7 @@ export function blocked(reason: string): Error {
 
 export type Attempt = {
   headers: Record<string, string>;
+  method?: "GET" | "HEAD";
   agent: (url: URL) => http.Agent;
   timeoutMs: number;
   signal?: AbortSignal | undefined;
@@ -73,7 +75,7 @@ function send(url: URL, attempt: Attempt): Promise<http.IncomingMessage> {
   return new Promise((resolve, reject) => {
     const open = url.protocol === "http:" ? http.request : https.request;
     const request = open(url, {
-      method: "GET",
+      method: attempt.method ?? "GET",
       headers: attempt.headers,
       agent: attempt.agent(url),
       ...(attempt.signal ? { signal: attempt.signal } : {}),
@@ -115,7 +117,13 @@ export async function followChecked(
     const status = response.statusCode ?? 0;
     const location = status >= 300 && status < 400 ? response.headers.location : undefined;
     if (!location) {
-      return { url: current, status, headers: response.headers, stream: response };
+      return {
+        url: current,
+        status,
+        statusText: response.statusMessage ?? "",
+        headers: response.headers,
+        stream: response,
+      };
     }
 
     response.destroy();
@@ -125,19 +133,34 @@ export async function followChecked(
   throw new Error("Trop de redirections");
 }
 
-export async function fetchFromProvider(
+export type UrlOptions = {
+  headers: Record<string, string>;
+  method?: "GET" | "HEAD";
+  timeoutMs?: number;
+  signal?: AbortSignal | undefined;
+};
+
+export async function fetchUrl(url: string, options: UrlOptions): Promise<ProviderResponse> {
+  const attempt = { ...options, timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS };
+
+  try {
+    return await followChecked(url, { ...attempt, agent: sharedAgent }, checkExternal);
+  } catch (error) {
+    if (!isRetryable(error)) throw error;
+    // A cdn closing a pooled connection just as it is reused: retry on a new one.
+    log.debug("retrying on a fresh connection", { url, err: error });
+    return followChecked(url, { ...attempt, agent: freshAgent }, checkExternal);
+  }
+}
+
+export function fetchFromProvider(
   targetUrl: string,
   { provider, rangeHeader, signal }: FetchOptions = {},
 ): Promise<ProviderResponse> {
   const request = buildProviderRequest(targetUrl, provider, rangeHeader);
-  const attempt = { headers: request.headers, timeoutMs: request.timeoutMs, signal };
-
-  try {
-    return await followChecked(request.url, { ...attempt, agent: sharedAgent }, checkExternal);
-  } catch (error) {
-    if (!isRetryable(error)) throw error;
-    // A cdn closing a pooled connection just as it is reused: retry on a new one.
-    log.debug("retrying on a fresh connection", { url: request.url, err: error });
-    return followChecked(request.url, { ...attempt, agent: freshAgent }, checkExternal);
-  }
+  return fetchUrl(request.url, {
+    headers: request.headers,
+    timeoutMs: request.timeoutMs,
+    signal,
+  });
 }

@@ -1,9 +1,11 @@
-import type { Readable, Writable } from "node:stream";
+import type { Writable } from "node:stream";
+
+export type Source = AsyncIterable<Buffer | Uint8Array> & { destroy: () => void };
 
 // A progressive mp4 played by the native <video> has none of the buffer hls.js keeps, so
 // it stalls on cdn jitter: read ahead from the cdn, write at the player's pace.
 export function pipeWithReadAhead(
-  upstream: Readable,
+  upstream: Source,
   sink: Writable,
   maxAheadBytes: number,
 ): Promise<void> {
@@ -41,7 +43,7 @@ export function pipeWithReadAhead(
       try {
         for await (const chunk of upstream) {
           if (aborted) return;
-          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
           queue.push(buffer);
           queued += buffer.length;
           wake("consumer");
