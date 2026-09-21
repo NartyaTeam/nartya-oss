@@ -1,0 +1,67 @@
+import { join } from "node:path";
+import { app, BrowserWindow } from "electron";
+import { appUrlCheck, resolveTarget } from "./app-url.mts";
+import { registerPlatformHandlers } from "./ipc.mts";
+
+const here = import.meta.dirname;
+const target = resolveTarget(here);
+
+function fail(reason: string): never {
+  console.error(`smoke: ${reason}`);
+  app.exit(1);
+  throw new Error(reason);
+}
+
+async function run(): Promise<void> {
+  registerPlatformHandlers(appUrlCheck(target));
+
+  const window = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: join(here, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  if ("devUrl" in target) await window.loadURL(target.devUrl);
+  else await window.loadFile(target.file);
+
+  const info: unknown = await window.webContents
+    .executeJavaScript("window.platform && window.platform.getAppInfo()")
+    .catch((error: unknown) => fail(`bridge call rejected: ${String(error)}`));
+
+  if (typeof info !== "object" || info === null) fail(`expected an object, got ${typeof info}`);
+  const { version, platform } = info as Record<string, unknown>;
+  if (typeof version !== "string" || version.length === 0) fail("missing version");
+  if (platform !== "darwin" && platform !== "win32" && platform !== "linux") {
+    fail(`unexpected platform ${String(platform)}`);
+  }
+
+  const intruder = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: join(here, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  await intruder.loadURL("data:text/html,<title>not the app</title>");
+
+  const rejected = await intruder.webContents
+    .executeJavaScript("window.platform.getAppInfo()")
+    .then(() => false)
+    .catch(() => true);
+  if (!rejected) fail("a page that is not the app reached the bridge");
+
+  console.log(
+    `smoke: bridge answered version ${version} on ${platform}, and refused a foreign page`,
+  );
+  app.exit(0);
+}
+
+// Not a top level await: Electron only emits ready once the entry module has finished
+// evaluating, so awaiting whenReady at module scope deadlocks.
+void app.whenReady().then(run);

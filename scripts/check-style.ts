@@ -32,7 +32,7 @@ export function normalizePath(path: string): string {
 export function inspect(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
   // A url in a test is a fixture; the rule exists so production code pins no host.
-  const isTest = /\.test\.tsx?$/.test(file);
+  const isTest = /\.test\.[cm]?tsx?$/.test(file);
   const lines = source.split("\n");
   let run = 0;
   let runStart = 0;
