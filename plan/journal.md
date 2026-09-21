@@ -16,3 +16,7 @@ One line per decision taken while rewriting. Longer reasoning goes in
   is why the api side of the security audit had stalled. Two repositories to keep now, and
   fixes that the client cannot make alone - the version floor, the recipe endpoint - become
   reachable. Not public yet.
+- 2026-09-22 - Porting does not mean mirroring. The empirical fixes are what must survive;
+  a defect around them is still a defect and gets fixed, noted in the commit. Two came out
+  of rereading the proxy: a drain that could never settle once the player left, and a
+  failure path that left a response open forever.

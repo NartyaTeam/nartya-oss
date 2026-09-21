@@ -99,10 +99,14 @@ clear, nothing is added around it.
 - Before touching a module: three lines on what it does and what will change. Wait for
   confirmation if the behaviour changes.
 - Every module has a verdict in [plan/inventory.md](plan/inventory.md): **port** (proven
-  low-level code: take it, move it to TypeScript, clean it, split it, without changing
-  behaviour, tests green) or **rewrite** (all of the front end: write from behaviour, never
-  from the text). Do not rewrite what is marked port: that code encodes empirical fixes which
-  are invisible on reading.
+  low-level code: take it, move it to TypeScript, clean it, split it, tests green) or
+  **rewrite** (all of the front end: write from behaviour, never from the text). Do not
+  rewrite what is marked port: that code encodes empirical fixes which are invisible on
+  reading.
+- Porting keeps the empirical fixes, not the defects around them. Where the previous code
+  is plainly wrong - a promise that can never settle, an error nobody answers - fix it and
+  say so in the commit. Starting again is what makes a better foundation possible; matching
+  the old behaviour is not a goal in itself.
 - Do not carry over comments from the previous code, not even when porting. Keep only the
   workarounds that are still true, reworded to one line.
 - Pure logic gets tests. Lint, tests and build pass before a module is called done.

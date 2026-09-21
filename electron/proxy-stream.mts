@@ -2,7 +2,7 @@ import type http from "node:http";
 import { parseByteRange, sliceUpstream } from "./byte-range.mts";
 import { createLogger } from "./log.mts";
 import type { ProviderResponse } from "./provider-fetch.mts";
-import { pipeWithReadAhead, type Source } from "./read-ahead.mts";
+import { drained, pipeWithReadAhead, type Source } from "./read-ahead.mts";
 import { isSegmentUrl, MAX_CACHEABLE_BYTES, type SegmentCache } from "./segment-cache.mts";
 
 const log = createLogger("proxy-stream");
@@ -15,7 +15,12 @@ export const CORS = {
 };
 
 export function fail(response: http.ServerResponse, status: number, error: string): void {
-  if (response.headersSent) return;
+  // Once the body has started there is no way left to say what went wrong, and leaving
+  // the response open would hang the player on a stream that will never continue.
+  if (response.headersSent) {
+    response.destroy();
+    return;
+  }
   response.writeHead(status, { "Content-Type": "application/json" });
   response.end(JSON.stringify({ success: false, error }));
 }
@@ -66,12 +71,21 @@ export async function serveSegment(
   let kept = 0;
   let received = 0;
   let cacheable = true;
+  let clientGone = false;
+
+  // Destroyed from here rather than checked in the loop: a host that has gone quiet
+  // leaves the loop suspended on a chunk that never comes, so no flag is ever read.
+  response.on("close", () => {
+    if (response.writableEnded) return;
+    clientGone = true;
+    upstream.stream.destroy();
+  });
 
   try {
     for await (const chunk of upstream.stream) {
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
       received += buffer.length;
-      if (!response.write(buffer)) await new Promise((drain) => response.once("drain", drain));
+      if (!response.write(buffer)) await drained(response);
       if (!cacheable) continue;
 
       kept += buffer.length;
@@ -82,12 +96,14 @@ export async function serveSegment(
         chunks.push(buffer);
       }
     }
-    response.end();
   } catch (error) {
+    if (clientGone) return;
     log.warn("segment stream interrupted", { err: error });
-    response.destroy(error instanceof Error ? error : undefined);
+    fail(response, 502, "Segment interrompu");
     return;
   }
+  if (clientGone) return;
+  response.end();
 
   // Never cache a partial segment. hls.js abandons requests all the time (variant
   // change, seek, bitrate arbitration) and the iteration above ends without throwing.
@@ -153,7 +169,6 @@ export async function serveStream(
     await pipeWithReadAhead(body, response, READ_AHEAD_BYTES);
   } catch (error) {
     log.warn("stream interrupted", { err: error });
-    if (!response.headersSent) fail(response, 502, "Flux interrompu");
-    else response.destroy(error instanceof Error ? error : undefined);
+    fail(response, 502, "Flux interrompu");
   }
 }

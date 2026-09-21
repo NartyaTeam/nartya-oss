@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { Readable } from "node:stream";
+import http from "node:http";
+import { once } from "node:events";
+import { PassThrough, Readable } from "node:stream";
 import { test } from "node:test";
 import { createProxy, type Fetch } from "./proxy.mts";
 import { createSegmentCache } from "./segment-cache.mts";
@@ -196,5 +198,46 @@ test("answers when a playlist stream dies instead of hanging", async () => {
     `http://127.0.0.1:${proxy.port}/video/proxy?h=${handle}&t=${proxy.token}`,
   );
   assert.equal(result.status, 500);
+  proxy.stop();
+});
+
+test("stops pulling the host when the player walks away mid segment", async () => {
+  const url = "https://cdn.test/long.ts";
+  const upstream = new PassThrough();
+  const handles = createHandles();
+  const cache = createSegmentCache();
+  const proxy = createProxy({
+    handles,
+    cache,
+    detectKey: () => null,
+    fetch: (() =>
+      Promise.resolve({
+        url,
+        status: 200,
+        statusText: "OK",
+        headers: { "content-length": "9999999", "content-type": "video/mp2t" },
+        stream: upstream,
+      })) as unknown as Fetch,
+  });
+  await proxy.start();
+  const handle = handles.mint({ url });
+
+  await new Promise<void>((done) => {
+    const client = http.get(
+      `http://127.0.0.1:${proxy.port}/video/proxy?h=${handle}&t=${proxy.token}`,
+      (incoming) => {
+        incoming.once("data", () => {
+          // The player seeks or switches variant: it drops the request mid segment.
+          client.destroy();
+          done();
+        });
+      },
+    );
+    upstream.write(Buffer.alloc(64 * 1024));
+  });
+
+  await once(upstream, "close");
+  assert.equal(upstream.destroyed, true, "the cdn download outlived the player");
+  assert.equal(cache.get(url), null, "a partial segment must never be cached");
   proxy.stop();
 });

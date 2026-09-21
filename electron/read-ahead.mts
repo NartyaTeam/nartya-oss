@@ -86,7 +86,7 @@ export function pipeWithReadAhead(
 }
 
 // Waits for drain, but does not hang if the client disconnects in the meantime.
-function drained(sink: Writable): Promise<void> {
+export function drained(sink: Writable): Promise<void> {
   return new Promise((ready) => {
     const onDrain = () => {
       sink.removeListener("close", onClose);
