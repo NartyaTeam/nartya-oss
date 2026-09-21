@@ -23,10 +23,17 @@ A module is done when it can be explained without reopening the old file.
 - ~~RLS audit~~ and ~~anti-abuse inventory~~: **done** on 2026-09-21. The schema is sound,
   nothing blocking. Three follow-ups remain:
   - drop the six permissive policies in the rewritten schema (phase 5);
-  - retire the legacy source URL path and enforce the version floor on the API side,
-    **before publishing phase 3.4**;
+  - ~~retire the legacy source URL path~~: **done in production on 2026-09-21**, decided on
+    the logs (668 samples over 15 days, zero legacy request). Still to remove from the api
+    code, which now happens in `nartya-api-oss`;
+  - enforce the version floor on the api side: **not a setting**. `/version-policy` only
+    publishes a floor the client chooses to obey, and no middleware enforces anything. This
+    moves to `nartya-api-oss` phase B;
   - cross-check with the Supabase Security Advisor and `supabase db lint` before phase 5.
-- **Recipe endpoint**: rate limiting and logging before the proxy is published (D5).
+- **Recipe endpoint**: rate limiting and logging before the proxy is published (D5). Also
+  `nartya-api-oss` phase B.
+- **D16**: the api moves in step with the client, in its own decoupled repository. See
+  `../nartya-api-oss/plan/`.
 - Tag the previous repository `pre-oss`.
 
 ## Phase 1 - Commit 1: skeleton, tooling, guard rails

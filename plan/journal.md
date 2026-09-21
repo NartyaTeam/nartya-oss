@@ -11,3 +11,8 @@ One line per decision taken while rewriting. Longer reasoning goes in
   library brings. The single instance lock means there is only ever one writer, which is the
   part a library would otherwise be worth. Redaction lives in the logger, and `check-style`
   enforces one scope per file named after it.
+- 2026-09-22 - The api gets its own decoupled repository (`~/code/nartya-api-oss`) and moves
+  in step with this one. `NartyaTeam/nartya-api` deploys to production on every push, which
+  is why the api side of the security audit had stalled. Two repositories to keep now, and
+  fixes that the client cannot make alone - the version floor, the recipe endpoint - become
+  reachable. Not public yet.
