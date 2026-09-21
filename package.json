@@ -17,7 +17,7 @@
     "build:electron": "tsc -p tsconfig.electron.json",
     "electron": "npm run build:electron && electron .",
     "lint": "npm run typecheck && eslint . && prettier --check . && node scripts/check-style.ts",
-    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.scripts.json && tsc -p tsconfig.electron.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.test.json && tsc -p tsconfig.scripts.json && tsc -p tsconfig.electron.json --noEmit",
     "format": "prettier --write .",
     "metrics": "node scripts/metrics.ts",
     "test": "node --test",
@@ -44,5 +44,8 @@
     "typescript-eslint": "^8.46.2",
     "vite": "^7.3.6",
     "zustand": "^5.0.9"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.116.0"
   }
 }
