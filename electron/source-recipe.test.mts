@@ -53,12 +53,12 @@ test("keeps the previous recipe when a reload fails", async () => {
   assert.equal(await store.ensure(), recipe);
 });
 
-test("stays empty until credentials arrive", async () => {
+test("loads without credentials, which is what the demo recipe is for", async () => {
   const load = counting();
   const store = createRecipeStore(load);
 
-  assert.equal(await store.ensure(), null);
-  assert.equal(load.calls, 0);
+  assert.equal(await store.ensure(), recipe);
+  assert.equal(load.calls, 1);
 });
 
 test("detects a source by domain and answers null without a recipe", () => {

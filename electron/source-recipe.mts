@@ -1,3 +1,4 @@
+import { demoRecipe } from "./demo-recipe.mts";
 import { createLogger } from "./log.mts";
 
 const log = createLogger("source-recipe");
@@ -26,7 +27,7 @@ export type Recipe = {
 };
 
 export type Credentials = { apiBaseUrl: string; accessToken: string | null };
-export type Load = (credentials: Credentials) => Promise<Recipe>;
+export type Load = (credentials: Credentials | null) => Promise<Recipe>;
 
 const RECIPE_PATH = "/anime/sources/recipe";
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -52,7 +53,10 @@ export function readRecipe(body: unknown): Recipe | null {
   return recipe;
 }
 
-export async function fetchRecipe({ apiBaseUrl, accessToken }: Credentials): Promise<Recipe> {
+export async function fetchRecipe(credentials: Credentials | null): Promise<Recipe> {
+  if (!credentials) return demoRecipe();
+
+  const { apiBaseUrl, accessToken } = credentials;
   const response = await fetch(`${apiBaseUrl}${RECIPE_PATH}`, {
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -75,7 +79,6 @@ export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_
     if (next?.apiBaseUrl) credentials = next;
     if (recipe && Date.now() - loadedAt < ttlMs) return Promise.resolve(recipe);
     if (pending) return pending;
-    if (!credentials) return Promise.resolve(recipe);
 
     const request = load(credentials)
       .then((loaded) => {
