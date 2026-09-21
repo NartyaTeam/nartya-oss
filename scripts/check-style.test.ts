@@ -55,3 +55,10 @@ test("ignores templated hosts and loopback", () => {
   assert.equal(inspect("a.ts", 'const u = "http://localhost:5173/";').length, 0);
   assert.equal(inspect("a.ts", 'const u = "https://api.example.com";')[0]?.rule, "hardcoded-url");
 });
+
+test("makes a logger scope match its file name", () => {
+  const source = 'const log = createLogger("proxy");';
+  assert.equal(inspect("electron/proxy.mts", source).length, 0);
+  assert.equal(inspect("electron/local-proxy.mts", source)[0]?.rule, "logger-scope");
+  assert.equal(inspect("src/lib/proxy.ts", 'createLogger("Proxy")')[0]?.rule, "logger-scope");
+});

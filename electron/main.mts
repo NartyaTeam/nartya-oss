@@ -2,11 +2,13 @@ import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
 import { appUrlCheck, resolveTarget } from "./app-url.mts";
 import { registerPlatformHandlers } from "./ipc.mts";
+import { createLogger, startFileLog } from "./log.mts";
 import { createWindow, revealOnce } from "./window.mts";
 
 const here = import.meta.dirname;
 const target = resolveTarget(here);
 const isAppUrl = appUrlCheck(target);
+const log = createLogger("main");
 
 function open(): void {
   revealOnce(createWindow({ preload: join(here, "preload.cjs"), target, isAppUrl }));
@@ -32,4 +34,8 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-void app.whenReady().then(open);
+void app.whenReady().then(() => {
+  const path = startFileLog(join(app.getPath("userData"), "logs"));
+  log.info("started", { version: app.getVersion(), platform: process.platform, log: path });
+  open();
+});

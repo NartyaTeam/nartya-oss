@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { extname, join, relative, sep } from "node:path";
+import { basename, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const roots = ["src", "shared", "electron", "scripts"];
@@ -13,6 +13,7 @@ const decorative = new RegExp(
 );
 const url = /https?:\/\/[^\s"'`)]+/;
 const LOOPBACK = /^https?:\/\/(127\.0\.0\.1|localhost)([:/]|$)/;
+const loggerScope = /\bcreateLogger\(\s*["'`]([^"'`]*)["'`]/;
 
 // This checker and its fixtures contain the very patterns they look for.
 const ignored = new Set(["scripts/check-style.ts", "scripts/check-style.test.ts"]);
@@ -68,6 +69,12 @@ export function inspect(file: string, source: string): Finding[] {
     if (pictographic.test(line) || decorative.test(line)) {
       findings.push({ file, line: number, rule: "emoji", text: line.trim() });
     }
+    const scope = loggerScope.exec(line);
+    // One scope per file, named after it: the previous codebase had 22 spellings.
+    if (scope && scope[1] !== basename(file).replace(/\.[cm]?tsx?$/, "")) {
+      findings.push({ file, line: number, rule: "logger-scope", text: scope[1] ?? "" });
+    }
+
     const match = isTest || isEndpoints ? null : url.exec(line);
     // A template builds its host from a variable, and loopback is not a choice to configure.
     if (match && !match[0].includes("${") && !LOOPBACK.test(match[0])) {

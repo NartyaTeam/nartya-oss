@@ -66,7 +66,10 @@ clear, nothing is added around it.
 - Early returns rather than nesting more than three levels deep.
 - One component per file. Aim under 300 lines; beyond that the file probably does two things.
   A page assembles, it does not hold business logic.
-- No `console.log`: a dedicated logger in the Electron main process, nothing in the front end.
+- No `console.log`. The main process logs through `electron/log.mts`: one `createLogger`
+  per file, scope named after the file, message then fields (`log.warn("load failed", { err })`).
+  Nothing in the front end. Logs end up in bug reports, so the logger redacts credentials and
+  cuts urls down to host and first segment - never work around that at the call site.
 - Named constants for values that are not obvious or used twice. No URL, key or host in the
   code: everything goes through configuration. The one place a third party endpoint may be
   written down is an `endpoints` module, so that there is a single file to audit.
@@ -115,4 +118,5 @@ npm run lint && npm test && npm run build
 ```
 
 `npm run lint` runs `tsc`, ESLint, Prettier and `scripts/check-style.ts`, which rejects emoji,
-comment blocks longer than two lines and hardcoded URLs.
+comment blocks longer than two lines, hardcoded URLs and logger scopes that do not match
+their file name.

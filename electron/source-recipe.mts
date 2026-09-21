@@ -1,3 +1,7 @@
+import { createLogger } from "./log.mts";
+
+const log = createLogger("source-recipe");
+
 export type MediaReferer = { pattern: string; template: string };
 
 export type Source = {
@@ -77,10 +81,17 @@ export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_
       .then((loaded) => {
         recipe = loaded;
         loadedAt = Date.now();
+        log.info("loaded", {
+          sources: Object.keys(loaded.sources).length,
+          version: loaded.version,
+        });
         return recipe;
       })
       // A slightly stale table beats a dead playback when the api hiccups.
-      .catch(() => recipe)
+      .catch((error: unknown) => {
+        log.warn("load failed", { err: error, stale: recipe !== null });
+        return recipe;
+      })
       .finally(() => {
         pending = null;
       });
@@ -141,6 +152,7 @@ export function compilePattern(pattern: string | undefined, flags = "i"): RegExp
   try {
     return new RegExp(pattern, flags);
   } catch {
+    log.warn("invalid pattern ignored", { pattern });
     return null;
   }
 }
