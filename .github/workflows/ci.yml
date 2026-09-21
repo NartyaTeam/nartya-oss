@@ -25,6 +25,8 @@ jobs:
       - name: smoke (electron bridge)
         if: matrix.os == 'ubuntu-latest'
         run: |
+          # Electron fetches its binary on first use, so pull it before touching the file.
+          node node_modules/electron/install.js
           # The runner ships the suid helper unconfigured, and electron refuses to start.
           sudo chown root:root node_modules/electron/dist/chrome-sandbox
           sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
