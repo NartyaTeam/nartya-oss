@@ -68,7 +68,8 @@ clear, nothing is added around it.
   A page assembles, it does not hold business logic.
 - No `console.log`: a dedicated logger in the Electron main process, nothing in the front end.
 - Named constants for values that are not obvious or used twice. No URL, key or host in the
-  code: everything goes through configuration.
+  code: everything goes through configuration. The one place a third party endpoint may be
+  written down is an `endpoints` module, so that there is a single file to audit.
 - A new dependency has to be justified. Prefer the platform when it is enough.
 - React: function components, local state or Zustand, effects kept to a minimum, `useMemo` and
   `useCallback` only when a measurement calls for it.

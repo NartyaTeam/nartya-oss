@@ -12,6 +12,7 @@ const decorative = new RegExp(
   "u",
 );
 const url = /https?:\/\/[^\s"'`)]+/;
+const LOOPBACK = /^https?:\/\/(127\.0\.0\.1|localhost)([:/]|$)/;
 
 // This checker and its fixtures contain the very patterns they look for.
 const ignored = new Set(["scripts/check-style.ts", "scripts/check-style.test.ts"]);
@@ -31,8 +32,10 @@ export function normalizePath(path: string): string {
 
 export function inspect(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
-  // A url in a test is a fixture; the rule exists so production code pins no host.
+  // A url in a test is a fixture, and endpoints files are where hosts are meant to live:
+  // the rule exists so that nothing else pins one.
   const isTest = /\.test\.[cm]?tsx?$/.test(file);
+  const isEndpoints = /(^|\/)endpoints\.[cm]?ts$/.test(file);
   const lines = source.split("\n");
   let run = 0;
   let runStart = 0;
@@ -65,8 +68,9 @@ export function inspect(file: string, source: string): Finding[] {
     if (pictographic.test(line) || decorative.test(line)) {
       findings.push({ file, line: number, rule: "emoji", text: line.trim() });
     }
-    const match = isTest ? null : url.exec(line);
-    if (match) {
+    const match = isTest || isEndpoints ? null : url.exec(line);
+    // A template builds its host from a variable, and loopback is not a choice to configure.
+    if (match && !match[0].includes("${") && !LOOPBACK.test(match[0])) {
       findings.push({ file, line: number, rule: "hardcoded-url", text: match[0] });
     }
   });

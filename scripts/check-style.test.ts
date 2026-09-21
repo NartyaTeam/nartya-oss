@@ -42,3 +42,16 @@ test("allows urls in test fixtures but not in source files", () => {
   assert.equal(inspect("electron/thing.test.mts", source).length, 0);
   assert.equal(inspect("src/lib/thing.ts", source)[0]?.rule, "hardcoded-url");
 });
+
+test("allows urls in an endpoints file but not beside it", () => {
+  const source = 'export const A = ["https://1.1.1.1/dns-query"];';
+  assert.equal(inspect("electron/endpoints.mts", source).length, 0);
+  assert.equal(inspect("electron/doh.mts", source)[0]?.rule, "hardcoded-url");
+});
+
+test("ignores templated hosts and loopback", () => {
+  assert.equal(inspect("a.ts", "const u = `http://${HOST}:${port}/x`;").length, 0);
+  assert.equal(inspect("a.ts", 'const u = "http://127.0.0.1:8351/auth-callback";').length, 0);
+  assert.equal(inspect("a.ts", 'const u = "http://localhost:5173/";').length, 0);
+  assert.equal(inspect("a.ts", 'const u = "https://api.example.com";')[0]?.rule, "hardcoded-url");
+});
