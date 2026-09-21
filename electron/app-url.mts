@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export function isHttpUrl(value: string): boolean {
@@ -15,6 +15,9 @@ export type AppUrlTarget = { devUrl: string } | { file: string };
 export function appUrlCheck(target: AppUrlTarget): (url: string) => boolean {
   if ("devUrl" in target) return (url) => url.startsWith(target.devUrl);
 
+  // Resolved on both sides: a relative or drive relative target would never match.
+  const expected = resolve(target.file);
+
   return (url) => {
     try {
       const parsed = new URL(url);
@@ -23,8 +26,8 @@ export function appUrlCheck(target: AppUrlTarget): (url: string) => boolean {
       // Compared as paths, not strings: an accented install path or a Windows drive
       // letter can be encoded or cased differently by Chromium.
       return process.platform === "win32"
-        ? file.toLowerCase() === target.file.toLowerCase()
-        : file === target.file;
+        ? file.toLowerCase() === expected.toLowerCase()
+        : file === expected;
     } catch {
       return false;
     }
