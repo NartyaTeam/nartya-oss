@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { inspect } from "./check-style.ts";
+import { inspect, normalizePath } from "./check-style.ts";
 
 test("accepts a short comment", () => {
   const source = [
@@ -29,4 +29,9 @@ test("rejects a hardcoded url", () => {
 test("reports the line where the block starts", () => {
   const source = ["const a = 1;", "/*", " * one", " * two", " */"].join("\n");
   assert.equal(inspect("a.ts", source)[0]?.line, 2);
+});
+
+test("normalizes windows separators so the ignore list matches", () => {
+  assert.equal(normalizePath("scripts\\check-style.test.ts"), "scripts/check-style.test.ts");
+  assert.equal(normalizePath("scripts/check-style.test.ts"), "scripts/check-style.test.ts");
 });

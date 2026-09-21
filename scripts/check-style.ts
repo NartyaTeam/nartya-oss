@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { extname, join, relative } from "node:path";
+import { extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const roots = ["src", "shared", "electron", "scripts"];
@@ -23,6 +23,10 @@ function commentOf(line: string, inBlock: boolean): { comment: boolean; inBlock:
   if (inBlock) return { comment: true, inBlock: !text.includes("*/") };
   if (text.startsWith("/*")) return { comment: true, inBlock: !text.includes("*/") };
   return { comment: text.startsWith("//") || text.startsWith("*"), inBlock: false };
+}
+
+export function normalizePath(path: string): string {
+  return path.split(sep).join("/").split("\\").join("/");
 }
 
 export function inspect(file: string, source: string): Finding[] {
@@ -84,7 +88,7 @@ async function main(): Promise<void> {
   const findings: Finding[] = [];
   for (const root of roots) {
     for (const file of await walk(root)) {
-      const name = relative(".", file);
+      const name = normalizePath(relative(".", file));
       if (ignored.has(name)) continue;
       findings.push(...inspect(name, await readFile(file, "utf8")));
     }
