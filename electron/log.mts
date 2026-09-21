@@ -15,7 +15,9 @@ export type Write = (line: string) => void;
 
 const RANK: Record<Level, number> = { debug: 0, info: 1, warn: 2, error: 3 };
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
-const secretKey = /^(auth|authorization|token|access_token|key|password|cookie|secret)$/i;
+// Matched anywhere in the name: accessToken and anonKey are exactly what someone reaches
+// for. A name ending in key goes too, so log an opaque source key as provider instead.
+const secretKey = /auth|token|password|passwd|cookie|secret|credential|bearer|session|key$/i;
 const absoluteUrl = /^[a-z][a-z0-9+.-]*:\/\//i;
 
 export function isLevel(value: string): value is Level {

@@ -168,3 +168,33 @@ test("hands out a playback url only once it is listening", async () => {
   proxy.stop();
   assert.equal(proxy.playbackUrl("abc", true), null);
 });
+
+test("answers when a playlist stream dies instead of hanging", async () => {
+  const url = "https://cdn.test/hls/dead.m3u8";
+  const handles = createHandles();
+  const proxy = createProxy({
+    handles,
+    cache: createSegmentCache(),
+    detectKey: () => null,
+    fetch: (() =>
+      Promise.resolve({
+        url,
+        status: 200,
+        statusText: "OK",
+        headers: { "content-type": "application/vnd.apple.mpegurl" },
+        stream: new Readable({
+          read() {
+            this.destroy(new Error("cdn dropped mid playlist"));
+          },
+        }),
+      })) as unknown as Fetch,
+  });
+  await proxy.start();
+  const handle = handles.mint({ url });
+
+  const result = await get(
+    `http://127.0.0.1:${proxy.port}/video/proxy?h=${handle}&t=${proxy.token}`,
+  );
+  assert.equal(result.status, 500);
+  proxy.stop();
+});

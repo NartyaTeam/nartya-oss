@@ -69,21 +69,31 @@ export async function fetchRecipe(credentials: Credentials | null): Promise<Reci
 
 // The table never touches the disk: writing it back would recreate the plain file that
 // pulling it out of the bundle was meant to remove.
+function identify(credentials: Credentials | null): string {
+  if (!credentials) return "";
+  return `${credentials.apiBaseUrl}|${credentials.accessToken ?? ""}`;
+}
+
 export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_MS) {
   let recipe: Recipe | null = null;
   let loadedAt = 0;
+  let loadedFrom: string | null = null;
   let pending: Promise<Recipe | null> | null = null;
   let credentials: Credentials | null = null;
 
   function ensure(next?: Credentials): Promise<Recipe | null> {
     if (next?.apiBaseUrl) credentials = next;
-    if (recipe && Date.now() - loadedAt < ttlMs) return Promise.resolve(recipe);
+    // Signing in replaces the demo recipe at once: what is held came from other
+    // credentials, so the age of it says nothing.
+    const fresh = loadedFrom === identify(credentials) && Date.now() - loadedAt < ttlMs;
+    if (recipe && fresh) return Promise.resolve(recipe);
     if (pending) return pending;
 
     const request = load(credentials)
       .then((loaded) => {
         recipe = loaded;
         loadedAt = Date.now();
+        loadedFrom = identify(credentials);
         log.info("loaded", {
           sources: Object.keys(loaded.sources).length,
           version: loaded.version,
@@ -141,6 +151,7 @@ export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_
   function set(next: Recipe): void {
     recipe = next;
     loadedAt = Date.now();
+    loadedFrom = identify(credentials);
   }
 
   return { ensure, get, getSource, defaultHeaders, detectKey, isAllowedEmbedHost, set };

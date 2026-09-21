@@ -99,7 +99,7 @@ export function createProxy(parts: ProxyParts) {
 
     const contentType = String(upstream.headers["content-type"] ?? "");
     if (isPlaylist(built.url, contentType)) {
-      servePlaylist(request, response, upstream, url, provider, target);
+      await servePlaylist(request, response, upstream, url, provider, target);
       return;
     }
     if (!rangeHeader && isSegmentUrl(built.url)) {
@@ -132,30 +132,29 @@ export function createProxy(parts: ProxyParts) {
     }
   }
 
-  function servePlaylist(
+  async function servePlaylist(
     request: http.IncomingMessage,
     response: http.ServerResponse,
     upstream: ProviderResponse,
     url: URL,
     provider: string | null,
     target: Target,
-  ): void {
-    void readText(upstream.stream).then((content) => {
-      const rewritten = transformPlaylist(
-        content,
-        upstream.url,
-        `${publicOrigin(request)}/video/proxy`,
-        {
-          mint: handles.mint,
-          provider,
-          referer: target.referer,
-          origin: target.origin,
-          tokenSuffix: `&t=${encodeURIComponent(url.searchParams.get("t") ?? "")}`,
-        },
-      );
-      response.writeHead(200, { ...CORS, "Content-Type": "application/vnd.apple.mpegurl" });
-      response.end(rewritten);
-    });
+  ): Promise<void> {
+    const content = await readText(upstream.stream);
+    const rewritten = transformPlaylist(
+      content,
+      upstream.url,
+      `${publicOrigin(request)}/video/proxy`,
+      {
+        mint: handles.mint,
+        provider,
+        referer: target.referer,
+        origin: target.origin,
+        tokenSuffix: `&t=${encodeURIComponent(url.searchParams.get("t") ?? "")}`,
+      },
+    );
+    response.writeHead(200, { ...CORS, "Content-Type": "application/vnd.apple.mpegurl" });
+    response.end(rewritten);
   }
 
   async function handle(

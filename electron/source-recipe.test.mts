@@ -110,3 +110,20 @@ test("ignores an invalid pattern instead of throwing", () => {
   assert.equal(compilePattern(undefined), null);
   assert.equal(compilePattern("\\.mp4$")?.test("x.MP4"), true);
 });
+
+test("replaces the demo recipe as soon as credentials arrive", async () => {
+  const demo: Recipe = { version: 0, sources: { demo: {} } };
+  const store = createRecipeStore(async (creds) => (creds ? recipe : demo));
+
+  assert.equal(await store.ensure(), demo);
+  assert.equal(await store.ensure(credentials), recipe, "an hour of demo recipe after login");
+});
+
+test("reloads when the account changes", async () => {
+  const load = counting();
+  const store = createRecipeStore(load);
+
+  await store.ensure(credentials);
+  await store.ensure({ ...credentials, accessToken: "someone-else" });
+  assert.equal(load.calls, 2);
+});

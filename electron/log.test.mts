@@ -56,7 +56,6 @@ test("quotes only what needs it", () => {
 test("redacts anything that carries a credential", () => {
   assert.equal(formatValue("token", "abc"), "[redacted]");
   assert.equal(formatValue("Authorization", "Bearer abc"), "[redacted]");
-  assert.equal(formatValue("accessToken", "abc"), "abc", "only exact names are secrets");
 });
 
 test("keeps a url down to its host and first segment", () => {
@@ -101,3 +100,17 @@ test("rotates the file once it is too large", () => {
 function head(level: string): string {
   return `2026-09-22T01:19:00.123Z ${level.padEnd(5)} [s] m`;
 }
+
+test("redacts a credential wherever the word sits in the name", () => {
+  for (const name of [
+    "accessToken",
+    "supabaseAnonKey",
+    "sessionCookie",
+    "refreshToken",
+    "apiKey",
+  ]) {
+    assert.equal(formatValue(name, "secret-value"), "[redacted]", name);
+  }
+  assert.equal(formatValue("provider", "s1"), "s1", "an opaque provider id is not a secret");
+  assert.equal(formatValue("status", 206), "206");
+});
