@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-electron
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Security audit of the private deployment: kept out of the public repository.
+plan/audit-securite.md

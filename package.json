@@ -1,0 +1,48 @@
+{
+  "name": "nartya",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anime streaming desktop app",
+  "license": "MIT",
+  "author": "Nartya Team",
+  "type": "module",
+  "main": "dist-electron/electron/main.cjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:web && npm run build:electron",
+    "build:web": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "electron": "npm run build:electron && electron .",
+    "lint": "npm run typecheck && eslint . && prettier --check . && node scripts/check-style.ts",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.scripts.json && tsc -p tsconfig.electron.json --noEmit",
+    "format": "prettier --write .",
+    "metrics": "node scripts/metrics.ts",
+    "test": "node --test",
+    "prepare": "git config core.hooksPath .githooks"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.22",
+    "electron": "^44.4.3",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2",
+    "tailwindcss": "3.4.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.46.2",
+    "vite": "^7.3.6",
+    "zustand": "^5.0.9"
+  }
+}

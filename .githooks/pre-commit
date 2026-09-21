@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner
+else
+  echo "pre-commit: gitleaks is not installed, staged changes were not scanned." >&2
+  echo "            install it from https://github.com/gitleaks/gitleaks - CI blocks either way." >&2
+fi
+
+node scripts/check-style.ts
