@@ -10,5 +10,10 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/vite-env.d.ts", "src/**/*.test.ts", "src/**/*.test.tsx"]
+  "include": [
+    "src/vite-env.d.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "electron/**/*.test.mts"
+  ]
 }
