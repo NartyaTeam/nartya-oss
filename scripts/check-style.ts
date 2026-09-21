@@ -31,6 +31,8 @@ export function normalizePath(path: string): string {
 
 export function inspect(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
+  // A url in a test is a fixture; the rule exists so production code pins no host.
+  const isTest = /\.test\.tsx?$/.test(file);
   const lines = source.split("\n");
   let run = 0;
   let runStart = 0;
@@ -63,7 +65,7 @@ export function inspect(file: string, source: string): Finding[] {
     if (pictographic.test(line) || decorative.test(line)) {
       findings.push({ file, line: number, rule: "emoji", text: line.trim() });
     }
-    const match = url.exec(line);
+    const match = isTest ? null : url.exec(line);
     if (match) {
       findings.push({ file, line: number, rule: "hardcoded-url", text: match[0] });
     }

@@ -35,3 +35,9 @@ test("normalizes windows separators so the ignore list matches", () => {
   assert.equal(normalizePath("scripts\\check-style.test.ts"), "scripts/check-style.test.ts");
   assert.equal(normalizePath("scripts/check-style.test.ts"), "scripts/check-style.test.ts");
 });
+
+test("allows urls in test fixtures but not in source files", () => {
+  const source = 'const base = "https://example.com";';
+  assert.equal(inspect("src/lib/thing.test.ts", source).length, 0);
+  assert.equal(inspect("src/lib/thing.ts", source)[0]?.rule, "hardcoded-url");
+});
