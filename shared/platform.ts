@@ -5,6 +5,8 @@ export type AppInfo = {
   platform: OsPlatform;
 };
 
+export type Channel = "app-info";
+
 export type Platform = {
   getAppInfo: () => Promise<AppInfo>;
 };

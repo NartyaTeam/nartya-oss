@@ -1,4 +1,4 @@
-import type { Platform } from "../shared/platform";
+import type { Platform } from "../../shared/platform";
 
 declare global {
   interface Window {

@@ -1,0 +1,37 @@
+export type Config = {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  apiBase: string | null;
+};
+
+export type ConfigResult = { ok: true; config: Config } | { ok: false; missing: string[] };
+
+type Env = {
+  VITE_SUPABASE_URL?: string | undefined;
+  VITE_SUPABASE_ANON_KEY?: string | undefined;
+  VITE_API_BASE?: string | undefined;
+};
+
+export function parseConfig(env: Env): ConfigResult {
+  const url = env.VITE_SUPABASE_URL?.trim();
+  const anonKey = env.VITE_SUPABASE_ANON_KEY?.trim();
+
+  const missing: string[] = [];
+  if (!url) missing.push("VITE_SUPABASE_URL");
+  if (!anonKey) missing.push("VITE_SUPABASE_ANON_KEY");
+  if (!url || !anonKey) return { ok: false, missing };
+
+  const apiBase = env.VITE_API_BASE?.trim();
+  return {
+    ok: true,
+    config: {
+      supabaseUrl: url,
+      supabaseAnonKey: anonKey,
+      apiBase: apiBase ? apiBase.replace(/\/+$/, "") : null,
+    },
+  };
+}
+
+export function readConfig(): ConfigResult {
+  return parseConfig(import.meta.env);
+}
