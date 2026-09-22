@@ -47,6 +47,9 @@ function manager(fetch: Fetch = slow(0)) {
     fetch,
     ffmpeg: () => Promise.resolve(null),
     onChange: (item) => changes.push(item),
+    resolveHandle: (handle) =>
+      handle === "h" ? { url: "https://cdn.test/a.mp4", provider: null } : null,
+    trustedScanBase: (base) => base.startsWith("https://api.test"),
   });
   return { root, store, downloads, changes };
 }
@@ -140,4 +143,45 @@ test("refuses an id that would name the root", async () => {
   const { downloads } = manager();
   assert.equal((await downloads.cancel("")).success, false);
   assert.equal((await downloads.remove("")).success, false);
+});
+
+test("creates an entry from a handle, never from a url", async () => {
+  const { store, downloads } = manager();
+  const refused = await downloads.start({
+    id: "a",
+    handle: "gone",
+    slug: "anime",
+    seasonId: "s1",
+    ep: 1,
+    lang: "vostfr",
+  });
+  assert.equal(refused.success, false);
+  assert.match(refused.error ?? "", /expiré/);
+  assert.equal(store.get("a"), null);
+});
+
+test("does not start an episode twice", async () => {
+  const { store, downloads } = manager(slow(200));
+  const payload = { id: "a", handle: "h", slug: "anime", seasonId: "s1", ep: 1, lang: "vostfr" };
+  await downloads.start(payload);
+  const again = await downloads.start(payload);
+
+  assert.equal(again.alreadyExists, true);
+  assert.equal(store.get("a")?.slug, "anime");
+});
+
+test("refuses scan pages from a base that is not ours", async () => {
+  const { store, downloads } = manager();
+  const result = await downloads.startScan({
+    id: "scan::a::b::1",
+    slug: "a",
+    oeuvre: "b",
+    chapter: "1",
+    folder: "ch-1",
+    pages: 3,
+    imageBase: "https://evil.test/images",
+  });
+  assert.equal(result.success, false);
+  assert.match(result.error ?? "", /non reconnue/);
+  assert.equal(store.get("scan::a::b::1"), null);
 });

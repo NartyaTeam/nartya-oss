@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import type { DownloadItem } from "../shared/downloads.ts";
+import { createEntries } from "./download-entry.mts";
 import { downloadHls } from "./download-hls.mts";
 import { downloadMp4 } from "./download-mp4.mts";
 import { itemFolder, isValidId } from "./download-paths.mts";
@@ -17,6 +18,8 @@ export type Parts = {
   fetch: Fetch;
   ffmpeg: () => Promise<string | null>;
   onChange: (item: DownloadItem) => void;
+  resolveHandle: (handle: string) => { url: string; provider: string | null } | null;
+  trustedScanBase: (imageBase: string) => boolean;
 };
 
 export type Result = { success: boolean; error?: string; canceled?: number };
@@ -25,7 +28,7 @@ const log = createLogger("downloads");
 const DEFAULT_CONCURRENT = 2;
 
 export function createDownloads(parts: Parts) {
-  const { store, root, fetch, ffmpeg, onChange } = parts;
+  const { store, root, fetch, ffmpeg, onChange, resolveHandle, trustedScanBase } = parts;
   const active = new Map<string, AbortController>();
   const queue: Pending[] = [];
   let running = 0;
@@ -201,7 +204,19 @@ export function createDownloads(parts: Parts) {
       .filter((item) => Boolean(item.slug));
   }
 
+  const entries = createEntries({
+    store,
+    root,
+    fetch,
+    emit,
+    enqueue,
+    resolveHandle,
+    trustedScanBase,
+  });
+
   return {
+    start: entries.start,
+    startScan: entries.startScan,
     enqueue,
     cancel,
     cancelMatching,
