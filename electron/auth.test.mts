@@ -171,3 +171,25 @@ test("a captcha solved mid sign in leaves the port open for the callback", async
   await tick();
   assert.equal(state.stopped, 1);
 });
+
+test("a callback that lands before anyone waits is not lost", async () => {
+  const { server, call } = fakeServer();
+  const auth = createAuth({ server, openUrl: async () => {} });
+  await auth.redirectUrl();
+
+  // The browser can come back between opening it and starting to wait.
+  call("http://127.0.0.1:8351/auth-callback?code=early");
+  assert.equal(await auth.awaitCallback(), "http://127.0.0.1:8351/auth-callback?code=early");
+});
+
+test("the buffered callback belongs to the sign in that asked for it", async () => {
+  const { server, call } = fakeServer();
+  const auth = createAuth({ server, openUrl: async () => {}, waitMs: 5 });
+
+  await auth.redirectUrl();
+  call("http://127.0.0.1:8351/auth-callback?code=abandoned");
+
+  // Asking for a redirect again is a new attempt, so the old answer is not its answer.
+  await auth.redirectUrl();
+  assert.equal(await auth.awaitCallback(), null);
+});

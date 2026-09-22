@@ -32,6 +32,7 @@ export function createAuth(parts: AuthParts) {
   let timer: NodeJS.Timeout | null = null;
   let waitingCaptcha: ((token: string | null) => void) | null = null;
   let captchaTimer: NodeJS.Timeout | null = null;
+  let arrived: string | null = null;
 
   function settle(url: string | null): void {
     const waiting = pending;
@@ -58,7 +59,10 @@ export function createAuth(parts: AuthParts) {
   }
 
   function done(url: string | null): void {
-    settle(url);
+    // The browser can come back before the renderer starts waiting, and a callback that
+    // lands on nobody would otherwise leave the sign in hanging until it times out.
+    if (url !== null && !pending) arrived = url;
+    else settle(url);
     closeWhenIdle();
   }
 
@@ -76,6 +80,8 @@ export function createAuth(parts: AuthParts) {
   }
 
   async function redirectUrl(): Promise<string | null> {
+    // Asking for one starts an attempt, so an answer to the previous one is not its answer.
+    arrived = null;
     return (await listening()) ? server.redirectUrl() : null;
   }
 
@@ -113,6 +119,11 @@ export function createAuth(parts: AuthParts) {
     // A second wait replaces the first: only one sign in is ever in flight, and it is the
     // one the person is looking at. The port stays open for it.
     settle(null);
+    if (arrived) {
+      const url = arrived;
+      arrived = null;
+      return Promise.resolve(url);
+    }
     return new Promise((resolve) => {
       pending = resolve;
       timer = setTimeout(() => {
@@ -144,6 +155,7 @@ export function createAuth(parts: AuthParts) {
     captchaToken,
     open,
     cancel: () => {
+      arrived = null;
       settleCaptcha(null);
       done(null);
     },

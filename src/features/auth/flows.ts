@@ -133,6 +133,9 @@ export function createAuthFlows(parts: FlowParts) {
   }
 
   return {
+    // Only the desktop sends the person somewhere else to be verified; the browser widget
+    // stays in the page, so there is nothing to warn about there.
+    opensCaptchaTab: captchaSiteKey !== null && bridge !== null,
     signIn,
     signUp,
     signInWithDiscord,

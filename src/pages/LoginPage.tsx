@@ -145,6 +145,11 @@ export function LoginPage({ flows, onRecovery }: LoginProps) {
 
           {error && <Notice kind="error">{error}</Notice>}
           {notice && <Notice kind="info">{notice}</Notice>}
+          {busy !== null && flows.opensCaptchaTab && (
+            <Notice kind="info">
+              Une vérification s'est ouverte dans ton navigateur. Termine-la, puis reviens ici.
+            </Notice>
+          )}
 
           <Button type="submit" disabled={busy !== null}>
             {busy === "email" ? "…" : TITLES[mode]}
