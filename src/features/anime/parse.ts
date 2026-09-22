@@ -55,6 +55,7 @@ function parseDetail(value: unknown): AnimeDetail | null {
   return {
     slug,
     title,
+    alternativeTitles: strings(bag["alternativeTitles"]),
     synopsis: sentence(bag["synopsis"]),
     status: text(bag["status"]) || null,
     news: sentence(bag["news"]),
@@ -69,6 +70,7 @@ function parseMeta(value: unknown): AnimeMeta | null {
 
   const lang = text(bag["descriptionLang"]);
   return {
+    titleNative: text(bag["titleNative"]) || null,
     genres: strings(bag["genres"]),
     score: count(bag["score"]),
     year: count(bag["year"]),

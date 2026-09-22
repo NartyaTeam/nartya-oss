@@ -10,6 +10,7 @@ export type Broadcaster = { host: string; url: string };
 export type AnimeDetail = {
   slug: string;
   title: string;
+  alternativeTitles: string[];
   synopsis: string | null;
   status: string | null;
   news: string | null;
@@ -18,6 +19,7 @@ export type AnimeDetail = {
 };
 
 export type AnimeMeta = {
+  titleNative: string | null;
   genres: string[];
   score: number | null;
   year: number | null;

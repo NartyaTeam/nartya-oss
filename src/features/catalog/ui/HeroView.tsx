@@ -1,19 +1,20 @@
 import useEmblaCarousel from "embla-carousel-react";
 import { Info, Play, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "../../../ui/Button.tsx";
 import { dedupeBySlug } from "../rows.ts";
 import type { HeroItem } from "../types.ts";
 
 const AUTOPLAY_MS = 8000;
 
-const ACTION =
-  "h-11 min-w-0 flex-1 px-4 py-0 text-sm sm:flex-none md:h-auto md:px-6 md:py-3 md:text-base";
+const ACTION = "min-w-0 flex-1 sm:flex-none";
 
 // The key art and the logo already arrive enriched from the server. The vignettes live
 // inside the slide so everything travels together during a drag.
 function HeroSlide({ item, active, load }: { item: HeroItem; active: boolean; load: boolean }) {
   const background = item.fanart ?? item.cover;
+  const to = `/anime/${encodeURIComponent(item.slug)}`;
 
   return (
     <div
@@ -92,25 +93,18 @@ function HeroSlide({ item, active, load }: { item: HeroItem; active: boolean; lo
           )}
 
           <div className="flex items-center gap-2.5 md:gap-3">
-            <Button
-              disabled
-              size="lg"
-              title="Le lecteur arrive avec la page anime"
-              className={ACTION}
-            >
-              <Play size={18} className="fill-current" />
-              Regarder
-            </Button>
-            <Button
-              disabled
-              variant="ghost"
-              size="lg"
-              title="La page anime arrive"
-              className={ACTION}
-            >
-              <Info size={18} />
-              Détails
-            </Button>
+            <Link to={to} className={ACTION}>
+              <Button size="lg" className="w-full">
+                <Play size={18} className="fill-current" />
+                Regarder
+              </Button>
+            </Link>
+            <Link to={to} className={ACTION}>
+              <Button variant="ghost" size="lg" className="w-full">
+                <Info size={18} />
+                Détails
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

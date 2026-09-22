@@ -1,8 +1,10 @@
 import type { Session } from "@supabase/supabase-js";
 import { HashRouter, Route, Routes } from "react-router-dom";
+import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
 import type { Profile } from "./features/session/profile.ts";
 import type { ResourceStore } from "./lib/resource-store.ts";
+import { AnimePage } from "./pages/AnimePage.tsx";
 import { CatalogHomePage } from "./pages/CatalogHomePage.tsx";
 import { GenrePage } from "./pages/GenrePage.tsx";
 import { SearchPage } from "./pages/SearchPage.tsx";
@@ -13,21 +15,23 @@ type SignedInProps = {
   session: Session;
   profile: Profile | null;
   catalog: Catalog | null;
+  anime: Anime | null;
   store: ResourceStore;
   onSignOut: () => void;
 };
 
 // Hash routing, because the packaged app is served from file:// where a path based history
 // has nothing to resolve against.
-export function SignedIn({ session, profile, catalog, store, onSignOut }: SignedInProps) {
+export function SignedIn({ session, profile, catalog, anime, store, onSignOut }: SignedInProps) {
   return (
     <HashRouter>
       <Shell profile={profile} email={session.user.email ?? null} onSignOut={onSignOut}>
-        {catalog ? (
+        {catalog && anime ? (
           <Routes>
             <Route path="/" element={<CatalogHomePage catalog={catalog} store={store} />} />
             <Route path="/recherche" element={<SearchPage catalog={catalog} store={store} />} />
             <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
+            <Route path="/anime/:slug" element={<AnimePage anime={anime} store={store} />} />
             <Route
               path="*"
               element={

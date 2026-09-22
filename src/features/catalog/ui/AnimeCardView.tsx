@@ -1,11 +1,12 @@
-import { Star } from "lucide-react";
+import { Play, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type { AnimeCard } from "../types.ts";
 
 type CardProps = { anime: AnimeCard; index?: number };
 
-// Portrait poster, sober: no border, no scale on the frame, the cover itself moves. The
-// hover overlay and its play button wait for the anime page, since nothing opens yet.
+// Portrait poster, sober: no border, no scale on the frame, the cover itself moves, and a
+// veil with a play button on hover.
 export function AnimeCardView({ anime, index }: CardProps) {
   const image = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
@@ -18,7 +19,7 @@ export function AnimeCardView({ anime, index }: CardProps) {
   }, [anime.cover]);
 
   return (
-    <figure className="group w-full text-left">
+    <Link to={`/anime/${encodeURIComponent(anime.slug)}`} className="group block w-full text-left">
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface-2">
         {anime.cover ? (
           <>
@@ -41,6 +42,12 @@ export function AnimeCardView({ anime, index }: CardProps) {
           <div className="skeleton h-full w-full" />
         )}
 
+        <div className="absolute inset-0 hidden items-center justify-center opacity-0 transition-all duration-200 group-hover:bg-black/45 group-hover:opacity-100 md:flex">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-fg">
+            <Play size={18} className="ml-0.5 fill-current" />
+          </span>
+        </div>
+
         {index !== undefined && (
           <span className="absolute left-1.5 top-1 font-display text-xl font-extrabold leading-none text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
             {String(index + 1).padStart(2, "0")}
@@ -55,14 +62,14 @@ export function AnimeCardView({ anime, index }: CardProps) {
         )}
       </div>
 
-      <figcaption>
+      <div>
         <h3 className="mt-2 line-clamp-1 text-sm font-semibold text-text transition-colors group-hover:text-primary">
           {anime.title}
         </h3>
         <p className="mt-0.5 line-clamp-1 text-xs text-muted">
           {anime.genres.slice(0, 2).join(" · ")}
         </p>
-      </figcaption>
-    </figure>
+      </div>
+    </Link>
   );
 }

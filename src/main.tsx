@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { createAuthFlows, type Purpose } from "./features/auth/flows.ts";
+import { createAnime } from "./features/anime/anime.ts";
 import { createCatalog } from "./features/catalog/catalog.ts";
 import { createApi } from "./lib/api.ts";
 import { readConfig } from "./lib/config.ts";
@@ -33,18 +34,24 @@ function start(): JSX.Element {
 
   // Without an api base there is no catalogue to read, and the screen says so rather than
   // failing call after call.
-  const catalog = config.apiBase
-    ? createCatalog(
-        createApi({
-          baseUrl: config.apiBase,
-          token: async () => (await client.auth.getSession()).data.session?.access_token ?? null,
-          version: __APP_VERSION__,
-          platform: bridge ? "desktop" : "web",
-        }),
-      )
+  const api = config.apiBase
+    ? createApi({
+        baseUrl: config.apiBase,
+        token: async () => (await client.auth.getSession()).data.session?.access_token ?? null,
+        version: __APP_VERSION__,
+        platform: bridge ? "desktop" : "web",
+      })
     : null;
 
-  return <App client={client} flows={flows} catalog={catalog} store={createResourceStore()} />;
+  return (
+    <App
+      client={client}
+      flows={flows}
+      catalog={api ? createCatalog(api) : null}
+      anime={api ? createAnime(api) : null}
+      store={createResourceStore()}
+    />
+  );
 }
 
 createRoot(root).render(<StrictMode>{start()}</StrictMode>);
