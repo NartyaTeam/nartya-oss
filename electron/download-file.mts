@@ -103,3 +103,45 @@ export async function downloadToFile(
   await rename(temporary, dest);
   return bytes;
 }
+
+export type Task = (index: number) => Promise<number>;
+
+// Stops the other workers as soon as one gives up: they used to keep writing progress
+// over the error, leaving the entry stuck in progress at around 99%.
+export async function runPool(
+  total: number,
+  count: number,
+  signal: AbortSignal,
+  task: Task,
+  onDone: (done: number, bytes: number) => void,
+): Promise<number> {
+  let cursor = 0;
+  let done = 0;
+  let bytes = 0;
+  let stopped = false;
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      if (signal.aborted) throw aborted();
+      if (stopped) return;
+      const index = cursor++;
+      if (index >= total) return;
+
+      let size: number;
+      try {
+        size = await task(index);
+      } catch (error) {
+        stopped = true;
+        throw error;
+      }
+      if (stopped) return;
+
+      bytes += size;
+      done++;
+      onDone(done, bytes);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(count, total) }, worker));
+  return bytes;
+}
