@@ -53,6 +53,13 @@ export function App({ client, flows, catalog, anime, store }: AppParts) {
   const [recovering, setRecovering] = useState(false);
 
   useEffect(() => watch(client), [client, watch]);
+
+  // The main process owns the api address and needs the session to unseal a stream; it has
+  // no way of its own to learn the token.
+  const accessToken = session?.access_token ?? null;
+  useEffect(() => {
+    void getPlatform()?.stream.session(accessToken);
+  }, [accessToken]);
   useBrowserCallback(flows, () => setRecovering(true));
 
   if (!ready) {
