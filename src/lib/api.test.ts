@@ -114,3 +114,12 @@ test("a body without data is a failure, not an undefined sneaking through", asyn
 
   assert.equal(result.ok, false);
 });
+
+test("a refused session says so, rather than blaming the catalogue", async () => {
+  const { api, calls } = apiWith([{ status: 401, body: { success: false } }]);
+  const result = await api.get("/home/sections");
+
+  assert.match(result.ok === false ? result.message : "", /Reconnecte-toi/);
+  assert.equal(result.ok === false && result.outdated, false);
+  assert.equal(calls(), 1);
+});

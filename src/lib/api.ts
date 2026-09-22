@@ -14,12 +14,14 @@ const TIMEOUT_MS = 15_000;
 const RETRIES = 2;
 const BACKOFF_MS = 400;
 const OUTDATED = 426;
+const UNAUTHORISED = 401;
 
 const sleep = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 
 const UNREACHABLE = "Le catalogue est injoignable. Vérifie ta connexion.";
 const OUT_OF_DATE = "Cette version de l'application n'est plus supportée.";
 const BROKEN = "Le catalogue n'a pas pu être chargé.";
+const SIGNED_OUT = "Ta session n'est plus acceptée. Reconnecte-toi.";
 
 export function createApi(parts: ApiParts) {
   const { baseUrl, token, version, platform } = parts;
@@ -71,7 +73,7 @@ export function createApi(parts: ApiParts) {
       // A 5xx is the api rebuilding its caches; a 4xx is an answer, and retrying it only
       // makes the same mistake three times.
       if (!response.ok) {
-        const message = response.status >= 500 ? UNREACHABLE : BROKEN;
+        const message = pick(response.status);
         return {
           ok: false,
           final: response.status < 500,
@@ -98,6 +100,11 @@ export function createApi(parts: ApiParts) {
   }
 
   return { get };
+}
+
+function pick(status: number): string {
+  if (status >= 500) return UNREACHABLE;
+  return status === UNAUTHORISED ? SIGNED_OUT : BROKEN;
 }
 
 export type Api = ReturnType<typeof createApi>;
