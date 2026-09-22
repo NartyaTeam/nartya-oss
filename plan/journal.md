@@ -23,3 +23,11 @@ One line per decision taken while rewriting. Longer reasoning goes in
 - 2026-09-22 - Cold reread before every push becomes a step, not a habit. Three modules in
   a row it found what a green suite did not, including a test that had frozen a bug. Each
   suspicion is reproduced by a test before being fixed.
+- 2026-09-22 - `castv2-client` is accepted although it was last published in June 2022, but
+  behind one file: `electron/cast-session.mts` is the only place that imports it, and the rest
+  of the app calls connect, load, pause, volume and stop on our own functions. Google's cast
+  protocol does not move, there is no maintained alternative, and reimplementing CASTV2
+  (protobuf over TLS) is not worth it for a secondary feature. The version is pinned, and its
+  `protobufjs` is forced to 7.x through `overrides`, which removes the eleven advisories the
+  6.x line carries; the library still encodes and decodes on 7.6.6, verified against the fake
+  receiver. `dns-packet` and `multicast-dns` are current and need no such care.

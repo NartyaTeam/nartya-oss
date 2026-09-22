@@ -12,6 +12,6 @@
     "rewriteRelativeImportExtensions": true,
     "verbatimModuleSyntax": false
   },
-  "include": ["electron", "shared"],
+  "include": ["electron", "shared", "types"],
   "exclude": ["**/*.test.mts"]
 }

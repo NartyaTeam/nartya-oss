@@ -12,6 +12,7 @@
   },
   "include": [
     "src/vite-env.d.ts",
+    "types",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "electron/**/*.test.mts"

@@ -9,5 +9,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["scripts", "vite.config.ts", "tailwind.config.ts"]
+  "include": ["scripts", "types", "vite.config.ts", "tailwind.config.ts"]
 }
