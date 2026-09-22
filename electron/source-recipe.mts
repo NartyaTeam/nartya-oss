@@ -26,7 +26,11 @@ export type Recipe = {
   sources: Record<string, Source>;
 };
 
-export type Credentials = { apiBaseUrl: string; accessToken: string | null };
+export type Credentials = {
+  apiBaseUrl: string;
+  accessToken: string | null;
+  appVersion?: string;
+};
 export type Load = (credentials: Credentials | null) => Promise<Recipe>;
 
 const RECIPE_PATH = "/anime/sources/recipe";
@@ -56,9 +60,13 @@ export function readRecipe(body: unknown): Recipe | null {
 export async function fetchRecipe(credentials: Credentials | null): Promise<Recipe> {
   if (!credentials) return demoRecipe();
 
-  const { apiBaseUrl, accessToken } = credentials;
+  const { apiBaseUrl, accessToken, appVersion } = credentials;
   const response = await fetch(`${apiBaseUrl}${RECIPE_PATH}`, {
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      // The api refuses versions below its floor, and answers 426 with the minimum.
+      ...(appVersion ? { "x-nartya-app-version": appVersion } : {}),
+    },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`recipe: HTTP ${response.status}`);

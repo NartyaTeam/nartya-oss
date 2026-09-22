@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compilePattern, createRecipeStore, readRecipe, type Recipe } from "./source-recipe.mts";
+import {
+  compilePattern,
+  createRecipeStore,
+  fetchRecipe,
+  readRecipe,
+  type Recipe,
+} from "./source-recipe.mts";
 
 const recipe: Recipe = {
   version: 3,
@@ -126,4 +132,23 @@ test("reloads when the account changes", async () => {
   await store.ensure(credentials);
   await store.ensure({ ...credentials, accessToken: "someone-else" });
   assert.equal(load.calls, 2);
+});
+
+test("tells the api which version is asking", async () => {
+  const seen: Record<string, string>[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = ((_url: string, init: { headers: Record<string, string> }) => {
+    seen.push(init.headers);
+    return Promise.resolve(
+      new Response(JSON.stringify({ data: { sources: {} } }), { status: 200 }),
+    );
+  }) as typeof fetch;
+
+  try {
+    await fetchRecipe({ apiBaseUrl: "https://api.test", accessToken: "t", appVersion: "1.24.0" });
+    assert.equal(seen[0]?.["x-nartya-app-version"], "1.24.0");
+    assert.equal(seen[0]?.Authorization, "Bearer t");
+  } finally {
+    globalThis.fetch = original;
+  }
 });
