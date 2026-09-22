@@ -50,9 +50,11 @@
   "dependencies": {
     "@radix-ui/react-select": "^2.3.7",
     "@supabase/supabase-js": "^2.116.0",
+    "artplayer": "^5.4.0",
     "castv2-client": "1.2.0",
     "dns-packet": "^5.6.1",
     "embla-carousel-react": "^8.6.0",
+    "hls.js": "^1.7.3",
     "lucide-react": "^0.559.0",
     "multicast-dns": "^7.2.5",
     "react-router-dom": "^7.18.2"
