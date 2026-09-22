@@ -7,6 +7,9 @@ const bagOf = (value: unknown): Bag | null =>
 
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 
+const count = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 
@@ -34,11 +37,17 @@ export function parseHero(value: unknown): HeroItem | null {
   const bag = bagOf(value);
   if (!card || !bag) return null;
 
+  // A square app icon dressed as a logo would cover the title it is meant to replace.
+  const logo = text(bag["clearLogo"]);
+
   return {
     ...card,
     fanart: text(bag["fanart"]) || null,
-    clearLogo: text(bag["clearLogo"]) || null,
+    clearLogo: logo && !/\/icons\//i.test(logo) ? logo : null,
     description: text(bag["description"]) || null,
+    year: count(bag["year"]),
+    format: text(bag["format"]) || null,
+    episodes: count(bag["episodes"]),
   };
 }
 

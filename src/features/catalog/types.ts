@@ -12,6 +12,9 @@ export type HeroItem = AnimeCard & {
   fanart: string | null;
   clearLogo: string | null;
   description: string | null;
+  year: number | null;
+  format: string | null;
+  episodes: number | null;
 };
 
 export type RowVariant = "plain" | "numbered" | "episode";

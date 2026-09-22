@@ -58,6 +58,26 @@ test("the hero carries what the banner needs", () => {
   assert.equal(hero?.description, "Luffy");
 });
 
+test("the hero carries the line it prints under the logo", () => {
+  const hero = parseHero({ ...card, year: 1999, format: "TV", episodes: 1122 });
+  assert.equal(hero?.year, 1999);
+  assert.equal(hero?.format, "TV");
+  assert.equal(hero?.episodes, 1122);
+
+  const bare = parseHero(card);
+  assert.equal(bare?.year, null);
+  assert.equal(bare?.format, null);
+  assert.equal(bare?.episodes, null);
+});
+
+test("a square app icon is not a clear logo", () => {
+  const icon = parseHero({ ...card, clearLogo: "https://img.example.test/icons/21.png" });
+  assert.equal(icon?.clearLogo, null);
+
+  const logo = parseHero({ ...card, clearLogo: "https://img.example.test/clearlogo/21.png" });
+  assert.equal(logo?.clearLogo, "https://img.example.test/clearlogo/21.png");
+});
+
 test("a row reads its kind from the api's two spellings", () => {
   assert.equal(parseRow({ key: "trending", numbered: true, items: [card] })?.variant, "numbered");
   assert.equal(parseRow({ key: "latest", variant: "episode", items: [card] })?.variant, "episode");
