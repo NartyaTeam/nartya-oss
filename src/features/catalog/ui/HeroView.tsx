@@ -135,8 +135,10 @@ export function HeroView({ items }: { items: HeroItem[] }) {
     if (!embla) return;
     read();
     embla.on("select", read);
+    embla.on("reInit", read);
     return () => {
       embla.off("select", read);
+      embla.off("reInit", read);
     };
   }, [embla, read]);
 

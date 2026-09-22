@@ -14,6 +14,14 @@ export type ResourceOptions = { persist?: boolean };
 
 const inflight = new Map<string, Promise<unknown>>();
 
+export type Forced = { key: string; count: number };
+
+// A retry belongs to the key it was asked for. Counted for the component instead, one
+// press would keep every later key from ever being served from cache again.
+export function forcedFor(forced: Forced, key: string): number {
+  return forced.key === key ? forced.count : 0;
+}
+
 // Stale while revalidate: what was read once is shown at once, then refreshed behind the
 // screen. The displayed value is read from the store, so a new key never shows the old one.
 export function useResource<T>(
@@ -22,7 +30,8 @@ export function useResource<T>(
   load: () => Promise<ApiResult<T>>,
   options: ResourceOptions = {},
 ): Resource<T> {
-  const [attempt, setAttempt] = useState(0);
+  const [forced, setForced] = useState<Forced>({ key, count: 0 });
+  const attempt = forcedFor(forced, key);
   const [, setTick] = useState(0);
   const [state, setState] = useState<{
     key: string;
@@ -81,6 +90,6 @@ export function useResource<T>(
     loading: settled ? state.loading : entry === null,
     error: settled ? state.error : null,
     outdated: settled ? state.outdated : false,
-    reload: () => setAttempt((count) => count + 1),
+    reload: () => setForced({ key, count: attempt + 1 }),
   };
 }

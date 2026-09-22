@@ -4,8 +4,8 @@ import type { Catalog } from "../features/catalog/catalog.ts";
 import { ResultsGrid } from "../features/catalog/ui/ResultsGrid.tsx";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
-import { Button } from "../ui/Button.tsx";
 import { Empty } from "../ui/Empty.tsx";
+import { Pager } from "../ui/Pager.tsx";
 
 type GenreProps = { catalog: Catalog; store: ResourceStore };
 
@@ -32,10 +32,12 @@ export function GenrePage({ catalog, store }: GenreProps) {
       )}
       {!data && error && <Empty title="Chargement impossible" note={error} onRetry={reload} />}
 
-      {data?.hasMore && (
-        <Button variant="ghost" onClick={() => setPaging({ genre, page: page + 1 })}>
-          Page suivante
-        </Button>
+      {data && data.items.length > 0 && (
+        <Pager
+          page={page}
+          hasMore={data.hasMore}
+          onGo={(next) => setPaging({ genre, page: next })}
+        />
       )}
     </div>
   );

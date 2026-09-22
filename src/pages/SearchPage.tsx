@@ -7,6 +7,7 @@ import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
 import { Button } from "../ui/Button.tsx";
 import { Empty } from "../ui/Empty.tsx";
+import { Pager } from "../ui/Pager.tsx";
 import { Field } from "../ui/Field.tsx";
 
 const TYPES = [
@@ -92,14 +93,11 @@ export function SearchPage({ catalog, store }: SearchProps) {
       {data && data.items.length > 0 && (
         <>
           <ResultsGrid items={data.items} />
-          {data.hasMore && (
-            <Button
-              variant="ghost"
-              onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
-            >
-              Page suivante
-            </Button>
-          )}
+          <Pager
+            page={filters.page}
+            hasMore={data.hasMore}
+            onGo={(page) => setFilters({ ...filters, page })}
+          />
         </>
       )}
 

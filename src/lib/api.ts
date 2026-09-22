@@ -58,9 +58,12 @@ export function createApi(parts: ApiParts) {
 
   async function once<T>(path: string): Promise<Attempt<T>> {
     try {
+      // The clock starts once the token is in hand: refreshing a session must not eat
+      // the budget the request itself needs.
+      const carried = await headers();
       const response = await fetcher(`${baseUrl}${path}`, {
         signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: await headers(),
+        headers: carried,
       });
 
       if (response.status === OUTDATED) {
