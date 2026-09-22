@@ -1,30 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
-import type { AppInfo } from "../shared/platform.ts";
+import type { Catalog } from "./features/catalog/catalog.ts";
 import type { AuthFlows } from "./features/auth/flows.ts";
 import { useSession } from "./features/session/store.ts";
 import { getPlatform } from "./lib/platform.ts";
-import { HomePage } from "./pages/HomePage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { NewPasswordPage } from "./pages/NewPasswordPage.tsx";
-
-function useAppInfo(): AppInfo | null {
-  const [info, setInfo] = useState<AppInfo | null>(null);
-
-  useEffect(() => {
-    const platform = getPlatform();
-    if (!platform) return;
-    let active = true;
-    void platform.getAppInfo().then((value) => {
-      if (active) setInfo(value);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return info;
-}
+import type { ResourceStore } from "./lib/resource-store.ts";
+import { SignedIn } from "./SignedIn.tsx";
 
 // Without the desktop bridge the provider sends the browser back to this page, code in the
 // query string. The flow it belongs to is carried there too, since nothing else survives.
@@ -47,10 +30,16 @@ function useBrowserCallback(flows: AuthFlows, onRecovery: () => void): void {
   }, [flows, onRecovery]);
 }
 
-export function App({ client, flows }: { client: SupabaseClient; flows: AuthFlows }) {
+export type AppParts = {
+  client: SupabaseClient;
+  flows: AuthFlows;
+  catalog: Catalog | null;
+  store: ResourceStore;
+};
+
+export function App({ client, flows, catalog, store }: AppParts) {
   const { session, profile, ready, watch } = useSession();
   const [recovering, setRecovering] = useState(false);
-  const info = useAppInfo();
 
   useEffect(() => watch(client), [client, watch]);
   useBrowserCallback(flows, () => setRecovering(true));
@@ -71,10 +60,11 @@ export function App({ client, flows }: { client: SupabaseClient; flows: AuthFlow
   }
 
   return (
-    <HomePage
+    <SignedIn
       session={session}
       profile={profile}
-      info={info}
+      catalog={catalog}
+      store={store}
       onSignOut={() => void flows.signOut()}
     />
   );

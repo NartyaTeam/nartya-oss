@@ -2,8 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { createAuthFlows, type Purpose } from "./features/auth/flows.ts";
+import { createCatalog } from "./features/catalog/catalog.ts";
+import { createApi } from "./lib/api.ts";
 import { readConfig } from "./lib/config.ts";
 import { getPlatform } from "./lib/platform.ts";
+import { createResourceStore } from "./lib/resource-store.ts";
 import { createSupabaseClient } from "./lib/supabase.ts";
 import { MissingConfig } from "./ui/MissingConfig.tsx";
 import "./index.css";
@@ -16,15 +19,32 @@ const result = readConfig();
 function start(): JSX.Element {
   if (!result.ok) return <MissingConfig missing={result.missing} />;
 
-  const client = createSupabaseClient(result.config);
+  const { config } = result;
+  const client = createSupabaseClient(config);
+  const bridge = getPlatform()?.auth ?? null;
+
   const flows = createAuthFlows({
     client,
-    bridge: getPlatform()?.auth ?? null,
-    captchaSiteKey: result.config.captchaSiteKey,
+    bridge,
+    captchaSiteKey: config.captchaSiteKey,
     browserRedirect: (purpose: Purpose) =>
       `${window.location.origin}/auth-callback?flow=${purpose}`,
   });
-  return <App client={client} flows={flows} />;
+
+  // Without an api base there is no catalogue to read, and the screen says so rather than
+  // failing call after call.
+  const catalog = config.apiBase
+    ? createCatalog(
+        createApi({
+          baseUrl: config.apiBase,
+          token: async () => (await client.auth.getSession()).data.session?.access_token ?? null,
+          version: __APP_VERSION__,
+          platform: bridge ? "desktop" : "web",
+        }),
+      )
+    : null;
+
+  return <App client={client} flows={flows} catalog={catalog} store={createResourceStore()} />;
 }
 
 createRoot(root).render(<StrictMode>{start()}</StrictMode>);
