@@ -77,6 +77,12 @@ Simplest to riskiest. All of it can be ported as is, per D5.
 5. Download manager, split into several files. _(port then split)_
 6. Cast. _(port)_
 
+Cast is verified without hardware by `scripts/fake-cast-receiver.ts`, which announces
+`_googlecast._tcp` over real mDNS, speaks the cast protocol and then fetches the video the way
+a television would. `--mode=complete|split|ptr-only` covers the three ways devices answer,
+`--no-fetch` plays a television that cannot reach this machine, `--reject-mp4` one that fetches
+the file and refuses to play it. It needs openssl for its certificate.
+
 ## Phase 4 - Front end, vertical slices
 
 Each slice ships data layer, store, hooks, components and page. All of it is a rewrite (D10).
