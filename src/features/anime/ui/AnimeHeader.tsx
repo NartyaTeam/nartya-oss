@@ -165,7 +165,8 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis }: HeaderProps) 
           )}
 
           <Genres genres={meta?.genres ?? []} />
-          {synopsis && <Synopsis text={synopsis} translated={translated} />}
+          {/* Keyed on the text: unfolded on one card, it must not arrive unfolded on the next. */}
+          {synopsis && <Synopsis key={synopsis} text={synopsis} translated={translated} />}
           <Broadcasters list={anime.externalWatch} />
         </div>
       </div>

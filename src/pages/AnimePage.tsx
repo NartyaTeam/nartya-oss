@@ -43,7 +43,8 @@ export function AnimePage({ anime, store }: AnimeProps) {
     `episodes:${slug}:${season?.id ?? ""}`,
     (): Promise<ApiResult<SeasonEpisodes>> =>
       season ? anime.episodes(slug, season.id) : Promise.resolve({ ok: true, data: NO_SEASON }),
-    { persist: true },
+    // Nothing to keep while the card is still loading and no season is known yet.
+    { persist: season !== undefined },
   );
 
   const episodes = list.data?.episodes ?? [];
