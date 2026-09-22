@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough, Readable } from "node:stream";
 import { test } from "node:test";
 import { createProxy, type Fetch } from "./proxy.mts";
@@ -32,7 +35,13 @@ async function proxyWith(answers: Record<string, Upstream>) {
   const handles = createHandles();
   const cache = createSegmentCache();
   const { fetch, asked } = upstreamOf(answers);
-  const proxy = createProxy({ handles, cache, fetch, detectKey: () => null });
+  const proxy = createProxy({
+    handles,
+    cache,
+    fetch,
+    detectKey: () => null,
+    localFile: () => null,
+  });
   await proxy.start();
   return { proxy, handles, cache, asked };
 }
@@ -178,6 +187,7 @@ test("answers when a playlist stream dies instead of hanging", async () => {
     handles,
     cache: createSegmentCache(),
     detectKey: () => null,
+    localFile: () => null,
     fetch: (() =>
       Promise.resolve({
         url,
@@ -210,6 +220,7 @@ test("stops pulling the host when the player walks away mid segment", async () =
     handles,
     cache,
     detectKey: () => null,
+    localFile: () => null,
     fetch: (() =>
       Promise.resolve({
         url,
@@ -239,5 +250,67 @@ test("stops pulling the host when the player walks away mid segment", async () =
   await once(upstream, "close");
   assert.equal(upstream.destroyed, true, "the cdn download outlived the player");
   assert.equal(cache.get(url), null, "a partial segment must never be cached");
+  proxy.stop();
+});
+
+test("serves a downloaded file, with ranges and without the network", async () => {
+  const folder = mkdtempSync(join(tmpdir(), "nartya-local-"));
+  writeFileSync(join(folder, "video.mp4"), "0123456789");
+  const proxy = createProxy({
+    handles: createHandles(),
+    cache: createSegmentCache(),
+    detectKey: () => null,
+    fetch: (() => Promise.reject(new Error("the network must not be touched"))) as unknown as Fetch,
+    localFile: (_id, rel) => join(folder, rel),
+  });
+  await proxy.start();
+  const base = `http://127.0.0.1:${proxy.port}/local?id=a&t=${proxy.token}`;
+
+  const whole = await get(base);
+  assert.equal(whole.body, "0123456789");
+  assert.equal(whole.headers.get("content-type"), "video/mp4");
+
+  const part = await get(base, { Range: "bytes=2-5" });
+  assert.equal(part.status, 206);
+  assert.equal(part.body, "2345");
+  assert.equal(part.headers.get("content-range"), "bytes 2-5/10");
+  proxy.stop();
+});
+
+test("turns a downloaded playlist into local urls carrying the token", async () => {
+  const folder = mkdtempSync(join(tmpdir(), "nartya-local-"));
+  writeFileSync(join(folder, "playlist.m3u8"), "#EXTM3U\n#EXTINF:4,\nseg00000.ts\n");
+  const proxy = createProxy({
+    handles: createHandles(),
+    cache: createSegmentCache(),
+    detectKey: () => null,
+    fetch: (() => Promise.reject(new Error("no network"))) as unknown as Fetch,
+    localFile: (_id, rel) => join(folder, rel),
+  });
+  await proxy.start();
+
+  const result = await get(
+    `http://127.0.0.1:${proxy.port}/local?id=a&path=playlist.m3u8&t=${proxy.token}`,
+  );
+  const line = result.body.trim().split("\n").at(-1) ?? "";
+  assert.match(line, /\/local\?id=a&path=seg00000\.ts&t=/);
+  proxy.stop();
+});
+
+test("answers 404 rather than reaching outside the entry", async () => {
+  const proxy = createProxy({
+    handles: createHandles(),
+    cache: createSegmentCache(),
+    detectKey: () => null,
+    fetch: (() => Promise.reject(new Error("no network"))) as unknown as Fetch,
+    // What resolveLocalFile does for a path that escapes the folder.
+    localFile: () => null,
+  });
+  await proxy.start();
+
+  const result = await get(
+    `http://127.0.0.1:${proxy.port}/local?id=a&path=../../secret&t=${proxy.token}`,
+  );
+  assert.equal(result.status, 404);
   proxy.stop();
 });

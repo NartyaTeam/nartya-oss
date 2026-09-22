@@ -1,4 +1,6 @@
+import { createReadStream, statSync } from "node:fs";
 import type http from "node:http";
+import { readFile } from "node:fs/promises";
 import { parseByteRange, sliceUpstream } from "./byte-range.mts";
 import { createLogger } from "./log.mts";
 import type { ProviderResponse } from "./provider-fetch.mts";
@@ -171,4 +173,89 @@ export async function serveStream(
     log.warn("stream interrupted", { err: error });
     fail(response, 502, "Flux interrompu");
   }
+}
+
+const LOCAL_TYPES: Record<string, string> = {
+  ".mp4": "video/mp4",
+  ".m3u8": "application/vnd.apple.mpegurl",
+  ".ts": "video/mp2t",
+  ".m4s": "video/iso.segment",
+  ".jpg": "image/jpeg",
+};
+
+export function localContentType(file: string): string {
+  const dot = file.lastIndexOf(".");
+  return LOCAL_TYPES[file.slice(dot).toLowerCase()] ?? "application/octet-stream";
+}
+
+// The port is only known at run time, so a downloaded playlist stores bare file names and
+// they become absolute urls here, pointing back at this same route.
+export function rewriteLocalPlaylist(
+  content: string,
+  id: string,
+  origin: string,
+  tokenSuffix: string,
+): string {
+  const base = `${origin}/local?id=${encodeURIComponent(id)}&path=`;
+  const link = (uri: string) => `${base}${encodeURIComponent(uri)}${tokenSuffix}`;
+
+  return content
+    .split("\n")
+    .map((line) => {
+      const text = line.trim();
+      if (text === "") return line;
+      if (text.startsWith("#")) {
+        return line.replace(/URI="([^"]+)"/g, (_match, uri: string) => `URI="${link(uri)}"`);
+      }
+      return link(text);
+    })
+    .join("\n");
+}
+
+export async function serveLocalFile(
+  request: http.IncomingMessage,
+  response: http.ServerResponse,
+  file: string,
+  rewrite: ((content: string) => string) | null,
+): Promise<void> {
+  const contentType = localContentType(file);
+
+  if (rewrite) {
+    const content = rewrite(await readFile(file, "utf8"));
+    response.writeHead(200, {
+      ...CORS,
+      "Content-Type": contentType,
+      "Content-Length": String(Buffer.byteLength(content)),
+    });
+    response.end(content);
+    return;
+  }
+
+  const { size } = statSync(file);
+  const range = parseByteRange(request.headers.range, size);
+  if (request.headers.range && !range) {
+    response.writeHead(416, { ...CORS, "Content-Range": `bytes */${size}` });
+    response.end();
+    return;
+  }
+
+  if (range) {
+    response.writeHead(206, {
+      ...CORS,
+      "Content-Type": contentType,
+      "Content-Range": `bytes ${range.start}-${range.end}/${size}`,
+      "Content-Length": String(range.end - range.start + 1),
+      "Accept-Ranges": "bytes",
+    });
+    createReadStream(file, { start: range.start, end: range.end }).pipe(response);
+    return;
+  }
+
+  response.writeHead(200, {
+    ...CORS,
+    "Content-Type": contentType,
+    "Content-Length": String(size),
+    "Accept-Ranges": "bytes",
+  });
+  createReadStream(file).pipe(response);
 }

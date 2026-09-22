@@ -9,7 +9,9 @@ import {
   fail,
   isPlaylist,
   readText,
+  rewriteLocalPlaylist,
   serveCached,
+  serveLocalFile,
   serveSegment,
   serveStream,
 } from "./proxy-stream.mts";
@@ -20,11 +22,14 @@ import { streamHandles, type Handles, type Target } from "./stream-handles.mts";
 
 export type Fetch = typeof fetchUrl;
 
+export type LocalFile = (id: string, rel: string) => string | null;
+
 export type ProxyParts = {
   handles: Handles;
   cache: SegmentCache;
   fetch: Fetch;
   detectKey: (url: string) => string | null;
+  localFile: LocalFile;
 };
 
 const log = createLogger("proxy");
@@ -37,7 +42,7 @@ function sameToken(given: string | null, expected: string | null): boolean {
 }
 
 export function createProxy(parts: ProxyParts) {
-  const { handles, cache, fetch, detectKey } = parts;
+  const { handles, cache, fetch, detectKey, localFile } = parts;
   const signedUrlFor = createSignedUrls((url, options) =>
     fetch(url, { ...options, timeoutMs: SIGNED_URL_TIMEOUT_MS }),
   );
@@ -157,6 +162,28 @@ export function createProxy(parts: ProxyParts) {
     response.end(rewritten);
   }
 
+  // Downloaded files, played with no network at all. The path is checked against the
+  // entry folder, so a crafted one cannot reach outside it.
+  async function local(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    const id = url.searchParams.get("id") ?? "";
+    const rel = url.searchParams.get("path") || "video.mp4";
+    const file = localFile(id, rel);
+    if (!file) {
+      fail(response, 404, "Fichier introuvable");
+      return;
+    }
+
+    const token = encodeURIComponent(url.searchParams.get("t") ?? "");
+    const rewrite = rel.endsWith(".m3u8")
+      ? (content: string) => rewriteLocalPlaylist(content, id, publicOrigin(request), `&t=${token}`)
+      : null;
+    await serveLocalFile(request, response, file, rewrite);
+  }
+
   async function handle(
     request: http.IncomingMessage,
     response: http.ServerResponse,
@@ -182,13 +209,14 @@ export function createProxy(parts: ProxyParts) {
       fail(response, 403, "Jeton invalide");
       return;
     }
-    if (url.pathname !== "/video/proxy") {
+    if (url.pathname !== "/video/proxy" && url.pathname !== "/local") {
       fail(response, 404, "Route inconnue");
       return;
     }
 
     try {
-      await proxy(request, response, url);
+      if (url.pathname === "/local") await local(request, response, url);
+      else await proxy(request, response, url);
     } catch (error) {
       const isBlocked = (error as NodeJS.ErrnoException).code === "URL_BLOCKED";
       log.warn("request failed", { err: error, blocked: isBlocked });
@@ -226,6 +254,12 @@ export function createProxy(parts: ProxyParts) {
     log.info("stopped");
   }
 
+  function localFileUrl(id: string, rel = "video.mp4"): string | null {
+    if (port === null || token === null || !id) return null;
+    const params = new URLSearchParams({ id, path: rel, t: token });
+    return `http://127.0.0.1:${port}/local?${params.toString()}`;
+  }
+
   function playbackUrl(handleId: string, isHls: boolean): string | null {
     if (port === null || token === null) return null;
     const kind = isHls ? "&kind=hls" : "";
@@ -236,6 +270,7 @@ export function createProxy(parts: ProxyParts) {
     start,
     stop,
     playbackUrl,
+    localFileUrl,
     handle,
     get port() {
       return port;
@@ -251,4 +286,6 @@ export const localProxy = createProxy({
   cache: segmentCache,
   fetch: fetchUrl,
   detectKey: (url) => sourceRecipe.detectKey(url),
+  // Replaced once the download manager knows its root, in initDownloads.
+  localFile: () => null,
 });
