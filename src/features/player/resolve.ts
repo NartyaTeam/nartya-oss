@@ -17,17 +17,20 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+// A retry that reuses the main process's five minute cache hands back the very handle
+// that just failed, instantly and identically.
 export function resolveEpisode(
   sources: Source[],
   preferred: string,
   excluded: string[] = [],
+  forceRefresh = false,
 ): Promise<Won<Playable>> {
   const bridge = getPlatform()?.stream;
   if (!bridge) return Promise.resolve({ ok: false, error: NO_BRIDGE });
 
   const ordered = orderSources(sources, preferred, excluded);
   return resolveHedged(ordered, async (source) => {
-    const outcome = await withTimeout(bridge.resolve(source.id), IPC_TIMEOUT_MS);
+    const outcome = await withTimeout(bridge.resolve(source.id, forceRefresh), IPC_TIMEOUT_MS);
     return outcome.ok
       ? { ok: true as const, value: { url: outcome.url, isHls: outcome.isHls } }
       : { ok: false as const, error: outcome.error };

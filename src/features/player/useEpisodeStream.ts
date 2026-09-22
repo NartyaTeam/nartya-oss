@@ -65,7 +65,12 @@ export function useEpisodeStream(
     setState(idle(key, carried));
 
     const exclude = disqualified ? disqualified.split(",") : [];
-    void resolveEpisode(latest.current.sources, latest.current.preferred, exclude).then((won) => {
+    void resolveEpisode(
+      latest.current.sources,
+      latest.current.preferred,
+      exclude,
+      attempt > 0,
+    ).then((won) => {
       if (!live) return;
       setState({
         key,
