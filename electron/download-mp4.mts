@@ -1,13 +1,9 @@
 import { createWriteStream } from "node:fs";
 import { mkdir, open, rename } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Readable } from "node:stream";
-import type { ProviderResponse } from "./provider-fetch.mts";
+import { aborted, retrying, stallGuard, type Fetch } from "./download-file.mts";
 
-export type Fetch = (
-  url: string,
-  options: { provider?: string | null; rangeHeader?: string; signal: AbortSignal },
-) => Promise<ProviderResponse>;
+export type { Fetch };
 
 export type Progress = (received: number, total: number) => void;
 
@@ -25,25 +21,7 @@ export type Range = { start: number; end: number };
 // ceiling of a few Mbps whatever the line can do. Pulling ranges in parallel lifts it.
 const CONNECTIONS = 4;
 const MIN_PARALLEL_BYTES = 8 * 1024 * 1024;
-const STALL_MS = 20_000;
-const MAX_ATTEMPTS = 3;
 const EMIT_EVERY_MS = 400;
-
-// A host that accepts the connection and then sends nothing would otherwise hold the
-// download open for ever, the "stuck at 99%" symptom.
-export function stallGuard(stream: Readable, ms: number) {
-  let timer: NodeJS.Timeout | null = null;
-  return {
-    arm() {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => stream.destroy(new Error("Segment bloqué (stall)")), ms);
-    },
-    clear() {
-      if (timer) clearTimeout(timer);
-      timer = null;
-    },
-  };
-}
 
 export function totalFromContentRange(header: string | undefined): number {
   const match = /\/(\d+)\s*$/.exec(header ?? "");
@@ -66,25 +44,6 @@ export function planRanges(
   return ranges;
 }
 
-function aborted(): Error {
-  return new DOMException("Aborted", "AbortError");
-}
-
-async function retrying<T>(signal: AbortSignal, attempt: (n: number) => Promise<T>): Promise<T> {
-  let last: unknown;
-  for (let n = 1; n <= MAX_ATTEMPTS; n++) {
-    if (signal.aborted) throw aborted();
-    try {
-      return await attempt(n);
-    } catch (error) {
-      if (signal.aborted) throw error;
-      last = error;
-      if (n < MAX_ATTEMPTS) await new Promise((wait) => setTimeout(wait, 500 * n));
-    }
-  }
-  throw last;
-}
-
 async function singleOnce(fetch: Fetch, job: Job, temporary: string): Promise<number> {
   const response = await fetch(job.url, { provider: job.provider, signal: job.signal });
   if (response.status < 200 || response.status >= 300) throw new Error(`HTTP ${response.status}`);
@@ -95,7 +54,7 @@ async function singleOnce(fetch: Fetch, job: Job, temporary: string): Promise<nu
 
   await new Promise<void>((done, failed) => {
     const out = createWriteStream(temporary);
-    const guard = stallGuard(response.stream, STALL_MS);
+    const guard = stallGuard(response.stream);
     guard.arm();
 
     response.stream.on("data", (chunk: Buffer) => {
@@ -166,7 +125,7 @@ export async function downloadParallel(fetch: Fetch, job: Job, total: number): P
     const file = await open(temporary, "r+");
     let position = range.start;
     try {
-      const guard = stallGuard(response.stream, STALL_MS);
+      const guard = stallGuard(response.stream);
       guard.arm();
       await new Promise<void>((done, failed) => {
         response.stream.on("data", (chunk: Buffer) => {
