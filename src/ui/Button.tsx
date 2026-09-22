@@ -3,8 +3,8 @@ import type { ButtonHTMLAttributes } from "react";
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" };
 
 const STYLES = {
-  primary: "bg-neutral-100 text-neutral-900 hover:bg-white",
-  ghost: "border border-neutral-800 text-neutral-200 hover:border-neutral-600",
+  primary: "bg-primary text-primary-fg hover:shadow-glow",
+  ghost: "border border-line text-text hover:border-primary/60 hover:text-primary",
 };
 
 export function Button({ variant = "primary", ...button }: ButtonProps) {

@@ -24,7 +24,9 @@ function commentOf(line: string, inBlock: boolean): { comment: boolean; inBlock:
   const text = line.trim();
   if (inBlock) return { comment: true, inBlock: !text.includes("*/") };
   if (text.startsWith("/*")) return { comment: true, inBlock: !text.includes("*/") };
-  return { comment: text.startsWith("//") || text.startsWith("*"), inBlock: false };
+  // A line starting with a star continues a block comment, and that case is above;
+  // outside one it is a css universal selector.
+  return { comment: text.startsWith("//"), inBlock: false };
 }
 
 export function normalizePath(path: string): string {

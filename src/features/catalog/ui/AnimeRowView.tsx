@@ -6,9 +6,11 @@ import { AnimeCardView } from "./AnimeCardView.tsx";
 export function AnimeRowView({ row }: { row: Row }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="flex items-baseline gap-2 text-lg font-medium">
+      <h2 className="flex items-baseline gap-3 font-display text-xl font-bold">
         {row.title}
-        {row.kana && <span className="text-sm text-neutral-600">{row.kana}</span>}
+        {row.kana && (
+          <span className="text-xs uppercase tracking-kana text-muted/70">{row.kana}</span>
+        )}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-2">
         {row.items.map((anime, index) => (
@@ -26,13 +28,10 @@ export function AnimeRowView({ row }: { row: Row }) {
 export function RowSkeleton() {
   return (
     <section className="flex flex-col gap-3">
-      <div className="h-6 w-40 rounded bg-neutral-900" />
+      <div className="h-6 w-40 rounded-xl bg-surface" />
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 6 }, (_, index) => (
-          <div
-            key={index}
-            className="aspect-[2/3] w-36 shrink-0 rounded-xl bg-neutral-900 sm:w-40"
-          />
+          <div key={index} className="aspect-[2/3] w-36 shrink-0 rounded-2xl bg-surface sm:w-40" />
         ))}
       </div>
     </section>

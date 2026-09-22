@@ -38,14 +38,14 @@ export function NewPasswordPage({ flows, onDone }: { flows: AuthFlows; onDone: (
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-100">
+    <main className="flex min-h-screen items-center justify-center bg-bg px-6 text-text">
       <form
         className="flex w-full max-w-sm flex-col gap-4"
         onSubmit={(event) => void submit(event)}
       >
         <div>
-          <h1 className="text-2xl font-semibold">Nouveau mot de passe</h1>
-          <p className="mt-1 text-sm text-neutral-400">Choisis-en un que tu n'utilises ailleurs.</p>
+          <h1 className="font-display text-3xl font-black">Nouveau mot de passe</h1>
+          <p className="mt-1 text-sm text-muted">Choisis-en un que tu n'utilises ailleurs.</p>
         </div>
 
         <Field

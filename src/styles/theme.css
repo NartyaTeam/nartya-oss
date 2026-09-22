@@ -1,0 +1,40 @@
+/* Vermillion Noir: ink, torii vermillion, a little gold. RGB triplets so Tailwind can
+   apply opacity to them. */
+:root {
+  --bg: 10 10 12;
+  --bg-2: 14 13 16;
+  --surface: 20 19 23;
+  --surface-2: 30 28 33;
+  --border: 42 40 47;
+  --text: 240 237 232;
+  --muted: 150 145 154;
+  --primary: 255 74 45;
+  --primary-fg: 255 247 244;
+  --accent: 211 173 110;
+  --sakura: 255 138 128;
+}
+
+/* Soft light at very low opacity, so sharp posters do not end up looking pixelated. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.018;
+  mix-blend-mode: soft-light;
+  background-image: url("../assets/grain.svg");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain {
+    display: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -16,31 +16,31 @@ const TABS = [
 
 export function Shell({ profile, email, onSignOut, children }: ShellProps) {
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <header className="sticky top-0 z-20 border-b border-neutral-900 bg-neutral-950/90 backdrop-blur">
+    <div className="min-h-screen bg-bg text-text">
+      <header className="sticky top-0 z-20 border-b border-line/60 bg-bg/85 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
-          <span className="text-lg font-semibold">Nartya</span>
+          <span className="font-display text-lg font-bold tracking-wide text-text">Nartya</span>
           {TABS.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               end={tab.to === "/"}
               className={({ isActive }) =>
-                `text-sm transition ${isActive ? "text-neutral-100" : "text-neutral-500 hover:text-neutral-300"}`
+                `text-sm transition ${isActive ? "text-text" : "text-muted hover:text-text"}`
               }
             >
               {tab.label}
             </NavLink>
           ))}
-          <div className="ml-auto flex items-center gap-3 text-sm text-neutral-400">
+          <div className="ml-auto flex items-center gap-3 text-sm text-muted">
             <span>{profile?.username ?? email ?? ""}</span>
-            <button className="hover:text-neutral-200" onClick={onSignOut}>
+            <button className="transition hover:text-primary" onClick={onSignOut}>
               Se déconnecter
             </button>
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl animate-fade-in px-6 py-8">{children}</main>
     </div>
   );
 }

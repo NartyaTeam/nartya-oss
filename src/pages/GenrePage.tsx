@@ -23,9 +23,9 @@ export function GenrePage({ catalog, store }: GenreProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{genre}</h1>
+      <h1 className="font-display text-3xl font-black">{genre}</h1>
 
-      {loading && !data && <p className="text-sm text-neutral-500">Chargement…</p>}
+      {loading && !data && <p className="text-sm text-muted">Chargement…</p>}
       {data && data.items.length > 0 && <ResultsGrid items={data.items} />}
       {data && data.items.length === 0 && (
         <Empty title="Rien dans ce genre" note="Le catalogue n'a rien à montrer ici." />

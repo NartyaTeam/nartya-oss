@@ -1,3 +1,50 @@
+@import "./styles/fonts.css";
+@import "./styles/theme.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+    margin: 0;
+    overflow-x: hidden;
+    /* Proportional kana spacing, which is what these two faces are drawn for. */
+    font-feature-settings: "palt" 1;
+  }
+
+  /* The drag ghost of an image fights the drag to scroll of the rows. */
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  ::selection {
+    background: rgb(var(--primary) / 0.85);
+    color: rgb(var(--primary-fg));
+  }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--surface-2));
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--primary) / 0.6);
+  }
+}

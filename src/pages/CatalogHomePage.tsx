@@ -18,7 +18,7 @@ function GenresRow({ catalog, store }: HomeProps) {
         <Link
           key={card.genre}
           to={`/genre/${encodeURIComponent(card.genre)}`}
-          className="rounded-full border border-neutral-800 px-3 py-1 text-sm text-neutral-300 transition hover:border-neutral-600 hover:text-neutral-100"
+          className="rounded-full border border-line px-3 py-1 text-sm text-muted transition hover:border-primary/60 hover:text-primary"
         >
           {card.genre}
         </Link>
@@ -38,7 +38,7 @@ export function CatalogHomePage({ catalog, store }: HomeProps) {
   if (!data && loading) {
     return (
       <div className="flex flex-col gap-10">
-        <div className="h-64 rounded-2xl bg-neutral-900 sm:h-80" />
+        <div className="h-64 rounded-2xl bg-surface sm:h-80" />
         <RowSkeleton />
         <RowSkeleton />
       </div>
@@ -62,7 +62,7 @@ export function CatalogHomePage({ catalog, store }: HomeProps) {
       {data.rows.map((row) => (
         <AnimeRowView key={row.key} row={row} />
       ))}
-      {error && <p className="text-center text-xs text-neutral-600">{error}</p>}
+      {error && <p className="text-center text-xs text-muted/70">{error}</p>}
     </div>
   );
 }

@@ -37,6 +37,15 @@ export type AppParts = {
   store: ResourceStore;
 };
 
+function Screen({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <div className="grain" aria-hidden="true" />
+    </>
+  );
+}
+
 export function App({ client, flows, catalog, store }: AppParts) {
   const { session, profile, ready, watch } = useSession();
   const [recovering, setRecovering] = useState(false);
@@ -46,26 +55,36 @@ export function App({ client, flows, catalog, store }: AppParts) {
 
   if (!ready) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-500">
+      <main className="flex min-h-screen items-center justify-center bg-bg text-sm text-muted">
         Chargement…
       </main>
     );
   }
 
   if (session && recovering) {
-    return <NewPasswordPage flows={flows} onDone={() => setRecovering(false)} />;
+    return (
+      <Screen>
+        <NewPasswordPage flows={flows} onDone={() => setRecovering(false)} />
+      </Screen>
+    );
   }
   if (!session) {
-    return <LoginPage flows={flows} onRecovery={() => setRecovering(true)} />;
+    return (
+      <Screen>
+        <LoginPage flows={flows} onRecovery={() => setRecovering(true)} />
+      </Screen>
+    );
   }
 
   return (
-    <SignedIn
-      session={session}
-      profile={profile}
-      catalog={catalog}
-      store={store}
-      onSignOut={() => void flows.signOut()}
-    />
+    <Screen>
+      <SignedIn
+        session={session}
+        profile={profile}
+        catalog={catalog}
+        store={store}
+        onSignOut={() => void flows.signOut()}
+      />
+    </Screen>
   );
 }

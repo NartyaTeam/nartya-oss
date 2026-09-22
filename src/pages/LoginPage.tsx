@@ -97,21 +97,21 @@ export function LoginPage({ flows, onRecovery }: LoginProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-100">
+    <main className="flex min-h-screen items-center justify-center bg-bg px-6 text-text">
       <div className="flex w-full max-w-sm flex-col gap-5">
         <div>
-          <h1 className="text-2xl font-semibold">Nartya</h1>
-          <p className="mt-1 text-sm text-neutral-400">{TITLES[mode]}</p>
+          <h1 className="font-display text-3xl font-black">Nartya</h1>
+          <p className="mt-1 text-sm text-muted">{TITLES[mode]}</p>
         </div>
 
         <Button variant="ghost" onClick={() => void discord()} disabled={busy !== null}>
           {busy === "discord" ? "Connexion en cours…" : "Continuer avec Discord"}
         </Button>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-neutral-600">
-          <span className="h-px flex-1 bg-neutral-800" />
+        <div className="flex items-center gap-3 text-xs uppercase tracking-kana text-muted/70">
+          <span className="h-px flex-1 bg-line" />
           ou
-          <span className="h-px flex-1 bg-neutral-800" />
+          <span className="h-px flex-1 bg-line" />
         </div>
 
         <form className="flex flex-col gap-3" onSubmit={(event) => void submit(event)}>
@@ -156,25 +156,19 @@ export function LoginPage({ flows, onRecovery }: LoginProps) {
           </Button>
         </form>
 
-        <div className="flex flex-col gap-1 text-sm text-neutral-400">
+        <div className="flex flex-col gap-1 text-sm text-muted">
           {mode === "signin" && (
             <>
-              <button
-                className="text-left hover:text-neutral-200"
-                onClick={() => switchTo("signup")}
-              >
+              <button className="text-left hover:text-text" onClick={() => switchTo("signup")}>
                 Pas de compte ? En créer un
               </button>
-              <button
-                className="text-left hover:text-neutral-200"
-                onClick={() => switchTo("forgot")}
-              >
+              <button className="text-left hover:text-text" onClick={() => switchTo("forgot")}>
                 Mot de passe oublié ?
               </button>
             </>
           )}
           {mode !== "signin" && (
-            <button className="text-left hover:text-neutral-200" onClick={() => switchTo("signin")}>
+            <button className="text-left hover:text-text" onClick={() => switchTo("signin")}>
               Revenir à la connexion
             </button>
           )}

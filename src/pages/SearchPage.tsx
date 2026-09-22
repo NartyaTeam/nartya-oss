@@ -56,7 +56,7 @@ export function SearchPage({ catalog, store }: SearchProps) {
         <select
           value={filters.type}
           onChange={(event) => choose({ type: event.target.value })}
-          className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm"
+          className="rounded-xl border border-line bg-surface px-3 py-2 text-sm text-text outline-none transition focus:border-primary/70"
         >
           {TYPES.map((type) => (
             <option key={type.value} value={type.value}>
@@ -67,7 +67,7 @@ export function SearchPage({ catalog, store }: SearchProps) {
         <select
           value={filters.lang}
           onChange={(event) => choose({ lang: event.target.value })}
-          className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm"
+          className="rounded-xl border border-line bg-surface px-3 py-2 text-sm text-text outline-none transition focus:border-primary/70"
         >
           {LANGS.map((lang) => (
             <option key={lang.value} value={lang.value}>
@@ -78,7 +78,7 @@ export function SearchPage({ catalog, store }: SearchProps) {
         <Button type="submit">Chercher</Button>
       </form>
 
-      {loading && !data && <p className="text-sm text-neutral-500">Recherche…</p>}
+      {loading && !data && <p className="text-sm text-muted">Recherche…</p>}
 
       {data && data.items.length > 0 && (
         <>

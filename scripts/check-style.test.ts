@@ -62,3 +62,8 @@ test("makes a logger scope match its file name", () => {
   assert.equal(inspect("electron/local-proxy.mts", source)[0]?.rule, "logger-scope");
   assert.equal(inspect("src/lib/proxy.ts", 'createLogger("Proxy")')[0]?.rule, "logger-scope");
 });
+
+test("a css universal selector is not a comment continuation", () => {
+  const source = ["*,", "*::before,", "*::after {", "  color: red;", "}"].join("\n");
+  assert.deepEqual(inspect("src/styles/theme.css", source), []);
+});
