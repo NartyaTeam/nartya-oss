@@ -18,16 +18,17 @@ type PlayerProps = {
   startAt: number;
   onTime: (seconds: number, duration: number) => void;
   onEnded: () => void;
+  onError: () => void;
 };
 
-export function Player({ source, poster, startAt, onTime, onEnded }: PlayerProps) {
+export function Player({ source, poster, startAt, onTime, onEnded, onError }: PlayerProps) {
   const box = useRef<HTMLDivElement>(null);
   // Primitives, not the object: a caller building it inline would otherwise tear the
   // player down and rebuild it on every render, and it would never finish loading.
   const { url, isHls, host } = source;
   // Read inside the player's own callbacks, which outlive the render that created them.
-  const latest = useRef({ startAt, onTime, onEnded });
-  latest.current = { startAt, onTime, onEnded };
+  const latest = useRef({ startAt, onTime, onEnded, onError });
+  latest.current = { startAt, onTime, onEnded, onError };
 
   useEffect(() => {
     const container = box.current;
@@ -86,14 +87,22 @@ export function Player({ source, poster, startAt, onTime, onEnded }: PlayerProps
       latest.current.onEnded();
     });
 
+    art.on("video:error", () => {
+      latest.current.onError();
+    });
+
     if (isHls && Hls.isSupported()) {
       hls = new Hls(hlsConfigFor(host));
       hls.loadSource(url);
       hls.attachMedia(art.video);
 
       const attached = hls;
-      // The rolling estimate, not one fragment's reading: it is exactly what the next
-      // launch seeds hls.js with.
+      // Only a fatal error is the source giving up; hls.js recovers from the rest itself.
+      attached.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) latest.current.onError();
+      });
+
+      // The rolling estimate, not one fragment's: it is what seeds the next launch.
       attached.on(Hls.Events.FRAG_LOADED, () => {
         const measured = attached.bandwidthEstimate;
         if (Number.isFinite(measured)) remember(browserBandwidth(), measured, host);

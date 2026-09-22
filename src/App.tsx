@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
+import type { Progress } from "./features/player/progress.ts";
 import type { AuthFlows } from "./features/auth/flows.ts";
 import { useSession } from "./features/session/store.ts";
 import { getPlatform } from "./lib/platform.ts";
@@ -36,6 +37,7 @@ export type AppParts = {
   flows: AuthFlows;
   catalog: Catalog | null;
   anime: Anime | null;
+  progress: Progress;
   store: ResourceStore;
 };
 
@@ -48,7 +50,7 @@ function Screen({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function App({ client, flows, catalog, anime, store }: AppParts) {
+export function App({ client, flows, catalog, anime, progress, store }: AppParts) {
   const { session, profile, ready, watch } = useSession();
   const [recovering, setRecovering] = useState(false);
 
@@ -92,6 +94,7 @@ export function App({ client, flows, catalog, anime, store }: AppParts) {
         profile={profile}
         catalog={catalog}
         anime={anime}
+        progress={progress}
         store={store}
         onSignOut={() => void flows.signOut()}
       />

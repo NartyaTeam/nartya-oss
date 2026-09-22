@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { availableLanguages, episodesIn, searchEpisodes, sourcesFor } from "../season.ts";
+import type { Watched } from "../../player/progress.ts";
 import type { AnimePage, Episode } from "../types.ts";
 import { Empty } from "../../../ui/Empty.tsx";
 import { EpisodeList } from "./EpisodeList.tsx";
@@ -15,6 +16,8 @@ type SeasonsProps = {
   error: string | null;
   onChoose: (patch: Record<string, string>) => void;
   onRetry: () => void;
+  watched: Record<string, Watched>;
+  watchUrl: (episode: Episode) => string;
 };
 
 export function SeasonsSection(props: SeasonsProps) {
@@ -59,6 +62,9 @@ export function SeasonsSection(props: SeasonsProps) {
           episodes={shown}
           lang={lang}
           poster={page.images?.poster ?? page.anime.poster}
+          seasonId={props.seasonId}
+          watched={props.watched}
+          watchUrl={props.watchUrl}
         />
       )}
 

@@ -7,6 +7,7 @@ import { createCatalog } from "./features/catalog/catalog.ts";
 import { createApi } from "./lib/api.ts";
 import { readConfig } from "./lib/config.ts";
 import { getPlatform } from "./lib/platform.ts";
+import { createProgress } from "./features/player/progress.ts";
 import { createResourceStore } from "./lib/resource-store.ts";
 import { createSupabaseClient } from "./lib/supabase.ts";
 import { MissingConfig } from "./ui/MissingConfig.tsx";
@@ -49,6 +50,7 @@ function start(): JSX.Element {
       flows={flows}
       catalog={api ? createCatalog(api) : null}
       anime={api ? createAnime(api) : null}
+      progress={createProgress(client)}
       store={createResourceStore()}
     />
   );

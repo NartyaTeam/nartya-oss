@@ -2,10 +2,11 @@ import { useParams, useSearchParams } from "react-router-dom";
 import type { Anime } from "../features/anime/anime.ts";
 import { DEFAULT_LANGUAGE, pickLanguage } from "../features/anime/languages.ts";
 import { availableLanguages } from "../features/anime/season.ts";
-import type { SeasonEpisodes } from "../features/anime/types.ts";
+import type { Episode, SeasonEpisodes } from "../features/anime/types.ts";
 import { AnimeHeader } from "../features/anime/ui/AnimeHeader.tsx";
 import { SeasonsSection } from "../features/anime/ui/SeasonsSection.tsx";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
+import type { Progress } from "../features/player/progress.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
@@ -13,7 +14,7 @@ import { Empty } from "../ui/Empty.tsx";
 
 const NO_SEASON: SeasonEpisodes = { name: null, description: null, cover: null, episodes: [] };
 
-type AnimeProps = { anime: Anime; store: ResourceStore };
+type AnimeProps = { anime: Anime; store: ResourceStore; progress: Progress; userId: string };
 
 function Skeleton() {
   return (
@@ -29,7 +30,7 @@ function Skeleton() {
   );
 }
 
-export function AnimePage({ anime, store }: AnimeProps) {
+export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -46,6 +47,11 @@ export function AnimePage({ anime, store }: AnimeProps) {
     // Nothing to keep while the card is still loading and no season is known yet.
     { persist: season !== undefined },
   );
+
+  const seen = useResource(store, `watched:${slug}:${userId}`, async () => ({
+    ok: true as const,
+    data: await progress.watchedIn(slug, userId),
+  }));
 
   const episodes = list.data?.episodes ?? [];
   const lang = pickLanguage(availableLanguages(episodes), params.get("lang") ?? DEFAULT_LANGUAGE);
@@ -90,6 +96,10 @@ export function AnimePage({ anime, store }: AnimeProps) {
           error={list.error}
           onChoose={choose}
           onRetry={list.reload}
+          watched={seen.data ?? {}}
+          watchUrl={(episode: Episode) =>
+            `/watch/${encodeURIComponent(slug)}?saison=${encodeURIComponent(season.id)}&ep=${String(episode.number)}&lang=${encodeURIComponent(lang)}`
+          }
         />
       )}
     </div>
