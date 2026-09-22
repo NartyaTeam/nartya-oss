@@ -20,3 +20,6 @@ One line per decision taken while rewriting. Longer reasoning goes in
   a defect around them is still a defect and gets fixed, noted in the commit. Two came out
   of rereading the proxy: a drain that could never settle once the player left, and a
   failure path that left a response open forever.
+- 2026-09-22 - Cold reread before every push becomes a step, not a habit. Three modules in
+  a row it found what a green suite did not, including a test that had frozen a bug. Each
+  suspicion is reproduced by a test before being fixed.

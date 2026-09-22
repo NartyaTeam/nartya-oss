@@ -124,3 +124,22 @@ npm run lint && npm test && npm run build
 `npm run lint` runs `tsc`, ESLint, Prettier and `scripts/check-style.ts`, which rejects emoji,
 comment blocks longer than two lines, hardcoded URLs and logger scopes that do not match
 their file name.
+
+## Before pushing
+
+A green suite says the code does what the tests say, not that the tests say the right
+thing. So before every push, reread the diff cold and hunt for defects:
+
+- read what changed as if reviewing someone else, looking for what breaks rather than
+  confirming it works: a promise that can never settle, a write that recreates what was
+  deleted, a value computed and then dropped, an error nobody answers;
+- **reproduce every suspicion with a test before fixing it.** A suspicion that cannot be
+  reproduced was wrong, and the test is what stops the defect coming back;
+- distrust a test that agrees too easily. One that asserts the current behaviour of code
+  written minutes earlier freezes the bug instead of catching it. A fake that does not
+  honour an abort signal, a cancellation that is never delivered: the defect is in the
+  test, and it hides one in the code;
+- run the thing for real, not only its tests, when there is something to run.
+
+This is not ceremony. It has caught, on consecutive modules: five defects in the proxy,
+two in the downloads, and a test that pinned a logger bug in place.
