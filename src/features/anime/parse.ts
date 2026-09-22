@@ -130,6 +130,8 @@ function parseSources(value: unknown): Record<string, Source[]> {
     for (const [slot, entry] of Object.entries(bag)) {
       const source = bagOf(entry);
       const id = text(source?.["id"]);
+      // The slot names the source in the url and in the menu: a blank one has no handle.
+      if (!slot) continue;
       // A legacy answer carries the host url as a plain string here, and this client has
       // nothing left to make sense of one.
       if (!id) continue;

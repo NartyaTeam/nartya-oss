@@ -34,11 +34,16 @@ export default {
           to: { opacity: "1", transform: "translateY(0)" },
         },
         shimmer: { to: { transform: "translateX(100%)" } },
+        "pop-in": {
+          from: { opacity: "0", transform: "scale(0.96) translateY(-4px)" },
+          to: { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.6s ease both",
         "slide-up": "slide-up 0.7s cubic-bezier(0.16,1,0.3,1) both",
         shimmer: "shimmer 1.6s infinite",
+        "pop-in": "pop-in 0.14s cubic-bezier(0.16,1,0.3,1) both",
       },
     },
   },

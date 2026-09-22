@@ -1,4 +1,5 @@
-import { availableLanguages, episodesIn, sourcesFor } from "../season.ts";
+import { useState } from "react";
+import { availableLanguages, episodesIn, searchEpisodes, sourcesFor } from "../season.ts";
 import type { AnimePage, Episode } from "../types.ts";
 import { Empty } from "../../../ui/Empty.tsx";
 import { EpisodeList } from "./EpisodeList.tsx";
@@ -18,10 +19,18 @@ type SeasonsProps = {
 
 export function SeasonsSection(props: SeasonsProps) {
   const { page, episodes, lang, loading, error } = props;
+  // A search belongs to the season it was typed in: carried over, it would show "nothing
+  // found" on a season that is full. The order is a preference, and stays.
+  const [typed, setTyped] = useState({ season: props.seasonId, term: "" });
+  const search = typed.season === props.seasonId ? typed.term : "";
+  const [reversed, setReversed] = useState(false);
+
   const languages = availableLanguages(episodes);
-  const shown = episodesIn(episodes, lang);
   const sources = sourcesFor(episodes, lang);
   const known = sources.some((entry) => entry.slot === props.source);
+
+  const found = searchEpisodes(episodesIn(episodes, lang), search);
+  const shown = reversed ? [...found].reverse() : found;
 
   return (
     <section className="mt-10 px-4 md:px-14">
@@ -35,6 +44,10 @@ export function SeasonsSection(props: SeasonsProps) {
         sources={sources}
         source={known ? props.source : AUTO_SOURCE}
         onSource={(value) => props.onChoose({ src: value })}
+        search={search}
+        onSearch={(term) => setTyped({ season: props.seasonId, term })}
+        reversed={reversed}
+        onReverse={() => setReversed(!reversed)}
       />
 
       {loading && shown.length === 0 && (
@@ -51,9 +64,13 @@ export function SeasonsSection(props: SeasonsProps) {
 
       {!loading && shown.length === 0 && (
         <Empty
-          title="Aucun épisode"
-          note={error ?? "Cette saison n'a rien de disponible pour le moment."}
-          onRetry={error ? props.onRetry : undefined}
+          title={search ? "Aucun épisode trouvé" : "Aucun épisode"}
+          note={
+            search
+              ? `Rien ne correspond à « ${search} » dans cette saison.`
+              : (error ?? "Cette saison n'a rien de disponible pour le moment.")
+          }
+          onRetry={error && !search ? props.onRetry : undefined}
         />
       )}
     </section>

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { availableLanguages, episodesIn, sourcesFor } from "./season.ts";
+import { availableLanguages, episodesIn, searchEpisodes, sourcesFor } from "./season.ts";
 import type { Episode, Source } from "./types.ts";
 
 const source = (slot: string, rank: number): Source => ({
@@ -63,4 +63,26 @@ test("an episode missing from a language is not listed under it", () => {
     [1],
   );
   assert.deepEqual(sourcesFor(season, "va"), []);
+});
+
+test("a number searches for that episode, not for every one containing the digits", () => {
+  const season = [1, 12, 112, 120].map((number) => episode(number, {}));
+  assert.deepEqual(
+    searchEpisodes(season, "12").map((entry) => entry.number),
+    [12],
+  );
+});
+
+test("a title is searched loosely, and case does not matter", () => {
+  const season = [episode(1, {}), episode(2, {})];
+  season[0] = { ...season[0]!, title: "Le pays d'ogre" };
+  assert.deepEqual(
+    searchEpisodes(season, "OGRE").map((entry) => entry.number),
+    [1],
+  );
+});
+
+test("an empty search is not a search", () => {
+  const season = [episode(1, {}), episode(2, {})];
+  assert.equal(searchEpisodes(season, "   ").length, 2);
 });

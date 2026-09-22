@@ -120,3 +120,11 @@ test("the space some snapshots left after an apostrophe is closed up", () => {
   assert.equal(fixElisions("L’île"), "L'île");
   assert.equal(parseEpisode({ ...sealed, title: "L' île" })?.title, "L'île");
 });
+
+test("a source with no slot name has no handle, so it is dropped", () => {
+  const nameless = {
+    episode: 1,
+    lecteurs: { vostfr: { "": { id: "token-a", key: "s1", label: "Source A", rank: 1 } } },
+  };
+  assert.equal(parseEpisode(nameless), null);
+});
