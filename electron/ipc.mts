@@ -1,6 +1,8 @@
 import { app, ipcMain, shell, type IpcMainInvokeEvent } from "electron";
-import type { AppInfo, Channel, OsPlatform } from "../shared/platform.ts";
+import type { AppInfo, Channel, OsPlatform, StreamOutcome } from "../shared/platform.ts";
 import { createAuth, type Auth } from "./auth.mts";
+import { localProxy } from "./proxy.mts";
+import { createStreams } from "./stream.mts";
 
 export type IsAppUrl = (url: string) => boolean;
 
@@ -27,12 +29,41 @@ function osPlatform(): OsPlatform {
   return "linux";
 }
 
-export function registerPlatformHandlers(isAppUrl: IsAppUrl): void {
+export function registerStreamHandlers(isAppUrl: IsAppUrl, apiBase: string | null): void {
+  let accessToken: string | null = null;
+  const streams = createStreams(() => ({
+    apiBase,
+    accessToken,
+    appVersion: app.getVersion(),
+  }));
+
+  secureHandle("stream-session", isAppUrl, (value) => {
+    accessToken = typeof value === "string" && value ? value : null;
+  });
+
+  secureHandle("stream-resolve", isAppUrl, async (argument): Promise<StreamOutcome> => {
+    const { token, forceRefresh } = (argument ?? {}) as { token?: unknown; forceRefresh?: unknown };
+    if (typeof token !== "string") return { ok: false, error: "Source invalide" };
+
+    const outcome = await streams.resolve(token, forceRefresh === true);
+    if (!outcome.ok) return outcome;
+
+    // The proxy has to be up before a handle is worth anything: it is what serves it.
+    await localProxy.start();
+    const url = localProxy.playbackUrl(outcome.value.handle, outcome.value.isHls);
+    return url
+      ? { ok: true, url, isHls: outcome.value.isHls }
+      : { ok: false, error: "Proxy local indisponible" };
+  });
+}
+
+export function registerPlatformHandlers(isAppUrl: IsAppUrl, apiBase: string | null): void {
   secureHandle("app-info", isAppUrl, (): AppInfo => ({
     version: app.getVersion(),
     platform: osPlatform(),
   }));
   registerAuthHandlers(isAppUrl, createAuth({ openUrl: (url) => shell.openExternal(url) }));
+  registerStreamHandlers(isAppUrl, apiBase);
 }
 
 export function registerAuthHandlers(isAppUrl: IsAppUrl, auth: Auth): void {

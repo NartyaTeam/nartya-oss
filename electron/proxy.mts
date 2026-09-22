@@ -52,6 +52,7 @@ export function createProxy(parts: ProxyParts) {
   let server: http.Server | null = null;
   let port: number | null = null;
   let token: string | null = null;
+  let starting: Promise<number> | null = null;
   const cast = createCastListener((request, response) => void handle(request, response, true));
 
   // Trusted only when the Host port is one of ours: a forged Host would otherwise poison
@@ -236,12 +237,16 @@ export function createProxy(parts: ProxyParts) {
     }
   }
 
-  async function start(): Promise<number> {
-    if (port !== null) return port;
+  function start(): Promise<number> {
+    if (port !== null) return Promise.resolve(port);
+    // The port is only set in the listen callback, so two callers at once open two
+    // listeners: the second token replaces the first, and stop() closes only the last.
+    if (starting) return starting;
+
     token = crypto.randomBytes(24).toString("base64url");
     const listener = http.createServer((request, response) => void handle(request, response));
 
-    return new Promise((resolve, reject) => {
+    starting = new Promise<number>((resolve, reject) => {
       listener.on("error", reject);
       listener.listen(0, "127.0.0.1", () => {
         const address = listener.address();
@@ -250,7 +255,11 @@ export function createProxy(parts: ProxyParts) {
         log.info("listening", { port });
         resolve(port ?? 0);
       });
+    }).finally(() => {
+      starting = null;
     });
+
+    return starting;
   }
 
   async function castUrl(localUrl: string, deviceIp: string): Promise<string | null> {

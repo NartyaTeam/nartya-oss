@@ -11,7 +11,9 @@ export type Channel =
   | "auth-open"
   | "auth-await-callback"
   | "auth-captcha"
-  | "auth-cancel";
+  | "auth-cancel"
+  | "stream-session"
+  | "stream-resolve";
 
 // Sign in happens in the system browser, so the app never sees the provider's page. The
 // redirect lands on a loopback server the main process owns, which hands back the url.
@@ -25,7 +27,18 @@ export type AuthBridge = {
   cancel: () => Promise<void>;
 };
 
+// The main process holds the api address, so the renderer hands over the session token
+// and never the destination it travels to.
+export type StreamBridge = {
+  session: (accessToken: string | null) => Promise<void>;
+  resolve: (token: string, forceRefresh?: boolean) => Promise<StreamOutcome>;
+};
+
+export type StreamOutcome =
+  { ok: true; url: string; isHls: boolean } | { ok: false; error: string };
+
 export type Platform = {
   getAppInfo: () => Promise<AppInfo>;
   auth: AuthBridge;
+  stream: StreamBridge;
 };

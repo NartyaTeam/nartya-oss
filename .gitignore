@@ -9,3 +9,7 @@ dist-electron
 
 # Security audit of the private deployment: kept out of the public repository.
 plan/audit-securite.md
+
+# Written by the packaging step: an official build's api address is not source.
+electron/build-config.json
+dist-electron/electron/build-config.json

@@ -14,6 +14,10 @@ const platform: Platform = {
     captchaToken: (siteKey) => invoke("auth-captcha", siteKey),
     cancel: () => invoke("auth-cancel"),
   },
+  stream: {
+    session: (accessToken) => invoke("stream-session", accessToken),
+    resolve: (token, forceRefresh) => invoke("stream-resolve", { token, forceRefresh }),
+  },
 };
 
 contextBridge.exposeInMainWorld("platform", platform);

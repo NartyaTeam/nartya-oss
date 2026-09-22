@@ -13,7 +13,7 @@ function fail(reason: string): never {
 }
 
 async function run(): Promise<void> {
-  registerPlatformHandlers(appUrlCheck(target));
+  registerPlatformHandlers(appUrlCheck(target), null);
 
   const window = new BrowserWindow({
     show: false,
@@ -52,6 +52,16 @@ async function run(): Promise<void> {
   if (opened !== false) fail("the bridge opened something that is not https");
   await window.webContents.executeJavaScript("window.platform.auth.cancel()");
 
+  // No api address in a source checkout, so resolving must refuse rather than reach out.
+  await window.webContents.executeJavaScript("window.platform.stream.session('a-token')");
+  const stream: unknown = await window.webContents
+    .executeJavaScript('window.platform.stream.resolve("some-token")')
+    .catch((error: unknown) => fail(`stream bridge rejected: ${String(error)}`));
+  const outcome = stream as { ok?: unknown; error?: unknown };
+  if (outcome.ok !== false || typeof outcome.error !== "string") {
+    fail(`expected a refusal without an api, got ${JSON.stringify(stream)}`);
+  }
+
   const intruder = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -71,7 +81,7 @@ async function run(): Promise<void> {
 
   console.log(
     `smoke: bridge answered version ${version} on ${platform}, served ${redirect}, ` +
-      "refused a file url and a foreign page",
+      `refused a file url and a foreign page, and playback without an api (${String(outcome.error)})`,
   );
   app.exit(0);
 }

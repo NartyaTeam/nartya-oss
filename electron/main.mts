@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
+import { readApiBase } from "./api-base.mts";
 import { appUrlCheck, resolveTarget } from "./app-url.mts";
 import { registerPlatformHandlers } from "./ipc.mts";
 import { createLogger, startFileLog } from "./log.mts";
@@ -17,7 +18,7 @@ function open(): void {
 // exit rather than quit: quit lets the module keep running to whenReady first.
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
-registerPlatformHandlers(isAppUrl);
+registerPlatformHandlers(isAppUrl, readApiBase(here));
 
 app.on("second-instance", () => {
   const [window] = BrowserWindow.getAllWindows();
@@ -36,6 +37,11 @@ app.on("window-all-closed", () => {
 
 void app.whenReady().then(() => {
   const path = startFileLog(join(app.getPath("userData"), "logs"));
-  log.info("started", { version: app.getVersion(), platform: process.platform, log: path });
+  log.info("started", {
+    version: app.getVersion(),
+    platform: process.platform,
+    log: path,
+    api: readApiBase(here) !== null,
+  });
   open();
 });

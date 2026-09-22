@@ -14,7 +14,7 @@
     "dev": "vite",
     "build": "npm run build:web && npm run build:electron",
     "build:web": "node scripts/clean.ts dist && vite build",
-    "build:electron": "node scripts/clean.ts dist-electron && tsc -p tsconfig.electron.json",
+    "build:electron": "node scripts/clean.ts dist-electron && tsc -p tsconfig.electron.json && node scripts/build-config.ts",
     "electron": "npm run build:electron && electron .",
     "lint": "npm run typecheck && eslint . && prettier --check . && node scripts/check-style.ts",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.test.json && tsc -p tsconfig.scripts.json && tsc -p tsconfig.electron.json --noEmit",

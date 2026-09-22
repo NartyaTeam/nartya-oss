@@ -249,3 +249,26 @@ test("stops pulling the host when the player walks away mid segment", async () =
   assert.equal(cache.get(url), null, "a partial segment must never be cached");
   proxy.stop();
 });
+
+test("two sources resolving at once open one listener, not two", async () => {
+  const proxy = createProxy({
+    handles: createHandles(),
+    cache: createSegmentCache(),
+    fetch: upstreamOf({}).fetch,
+    detectKey: () => null,
+    localFile: () => null,
+  });
+
+  const [first, second] = await Promise.all([proxy.start(), proxy.start()]);
+  assert.equal(first, second);
+
+  // The token is minted per listener: a second one would have replaced it, leaving the
+  // urls handed out by the first refused by the server that is still listening.
+  const url = proxy.playbackUrl("handle", true);
+  assert.ok(url?.includes(`127.0.0.1:${String(first)}`));
+
+  proxy.stop();
+  const again = await proxy.start();
+  assert.notEqual(again, null);
+  proxy.stop();
+});
