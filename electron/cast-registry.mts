@@ -17,7 +17,8 @@ export type Device = {
   manual: boolean;
 };
 
-export type Record_ = { name: string; type: string; data: unknown };
+export type Record_ = { name: string; type: string; data?: unknown };
+export type Ingested = { changed: boolean; matched: boolean; ask: Question[] };
 export type Packet = { answers?: Record_[]; additionals?: Record_[]; authorities?: Record_[] };
 
 type Instance = { name: string; lastSeen: number; source: string | null };
@@ -99,7 +100,7 @@ export function createCastRegistry(now: () => number = Date.now) {
     return { changed, ask };
   }
 
-  function ingest(packet: Packet, sourceAddress?: string): { changed: boolean; ask: Question[] } {
+  function ingest(packet: Packet, sourceAddress?: string): Ingested {
     const all = [
       ...(packet.answers ?? []),
       ...(packet.additionals ?? []),
@@ -132,7 +133,7 @@ export function createCastRegistry(now: () => number = Date.now) {
         }
       }
     }
-    if (touched.size === 0 && !addressesChanged) return { changed: false, ask: [] };
+    if (touched.size === 0 && !addressesChanged) return { changed: false, matched: false, ask: [] };
 
     for (const key of touched) {
       const known = instances.get(key);
@@ -152,7 +153,7 @@ export function createCastRegistry(now: () => number = Date.now) {
       changed = result.changed || changed;
       ask.push(...result.ask);
     }
-    return { changed, ask };
+    return { changed, matched: touched.size > 0, ask };
   }
 
   function reap(busyId: string | null = null): boolean {

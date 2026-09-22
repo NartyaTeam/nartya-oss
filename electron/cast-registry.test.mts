@@ -72,7 +72,7 @@ test("ignores a packet that says nothing about cast", () => {
   const result = registry.ingest({
     answers: [{ name: "_printer._tcp.local", type: "PTR", data: "hp._printer._tcp.local" }],
   });
-  assert.deepEqual(result, { changed: false, ask: [] });
+  assert.deepEqual(result, { changed: false, matched: false, ask: [] });
   assert.equal(registry.list().length, 0);
 });
 
