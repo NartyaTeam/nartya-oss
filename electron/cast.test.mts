@@ -18,33 +18,36 @@ type Recorded = {
   order: string[];
   liveToken: string | null;
   session: CastSession;
-  ready: boolean;
+  flags: { ready: boolean };
 };
 
 function harness(overrides: Partial<CastParts> = {}) {
+  const calls: string[] = [];
+  const flags = { ready: true };
+
+  const session: CastSession = {
+    play: async () => void calls.push("play"),
+    pause: async () => void calls.push("pause"),
+    seek: async (seconds: number) => void calls.push(`seek ${seconds}`),
+    setVolume: async (level: number) => void calls.push(`volume ${level}`),
+    setMuted: async (muted: boolean) => void calls.push(`mute ${muted}`),
+    close: () => void calls.push("close"),
+    get ready() {
+      return flags.ready;
+    },
+  };
+
   const recorded: Recorded = {
     states: [],
     devices: [],
     listenerStops: 0,
-    calls: [],
+    calls,
     handlers: null,
     asked: null,
     order: [],
     liveToken: "lan-token",
-    ready: true,
-    session: {} as CastSession,
-  };
-
-  recorded.session = {
-    play: async () => void recorded.calls.push("play"),
-    pause: async () => void recorded.calls.push("pause"),
-    seek: async (seconds: number) => void recorded.calls.push(`seek ${seconds}`),
-    setVolume: async (level: number) => void recorded.calls.push(`volume ${level}`),
-    setMuted: async (muted: boolean) => void recorded.calls.push(`mute ${muted}`),
-    close: () => void recorded.calls.push("close"),
-    get ready() {
-      return recorded.ready;
-    },
+    flags,
+    session,
   };
 
   const parts: CastParts = {
@@ -157,7 +160,7 @@ test("controls reach the session, and the volume is kept inside its range", asyn
 test("waits for the media session before play, pause or seek", async () => {
   const { cast, recorded } = await withDevice();
   await cast.start(DEVICE_ID, media);
-  recorded.ready = false;
+  recorded.flags.ready = false;
 
   assert.match((await cast.control("play")).error ?? "", /pas encore prête/);
   assert.match((await cast.control("seek", 5)).error ?? "", /pas encore prête/);

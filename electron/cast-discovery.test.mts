@@ -36,6 +36,10 @@ function announcement(): Packet {
   };
 }
 
+type MessageListener = (message: Buffer, from: { address: string }) => void;
+type ResponseListener = (packet: Packet, from: { address: string }) => void;
+type ErrorListener = (error: NodeJS.ErrnoException) => void;
+
 class FakeSocket implements QuerySocket {
   bound: string | null = null;
   closed = 0;
@@ -43,12 +47,14 @@ class FakeSocket implements QuerySocket {
   ttl: number | null = null;
   sent: Question[][] = [];
   chooseError: NodeJS.ErrnoException | null = null;
-  private onMessage: ((message: Buffer, from: { address: string }) => void) | null = null;
-  private onError: ((error: NodeJS.ErrnoException) => void) | null = null;
+  private onMessage: MessageListener | null = null;
+  private onError: ErrorListener | null = null;
 
-  on(event: "message" | "error", listener: (...args: never[]) => void): void {
-    if (event === "message") this.onMessage = listener as unknown as typeof this.onMessage;
-    else this.onError = listener as unknown as typeof this.onError;
+  on(event: "message", listener: MessageListener): void;
+  on(event: "error", listener: ErrorListener): void;
+  on(event: "message" | "error", listener: MessageListener & ErrorListener): void {
+    if (event === "message") this.onMessage = listener;
+    else this.onError = listener;
   }
 
   bind(_port: number, address: string, ready: () => void): void {
@@ -94,12 +100,14 @@ class FakeListener implements MdnsListener {
   queries: Question[][] = [];
   destroyed = 0;
   queryError: Error | null = null;
-  private onResponse: ((packet: Packet, from: { address: string }) => void) | null = null;
-  private onError: ((error: NodeJS.ErrnoException) => void) | null = null;
+  private onResponse: ResponseListener | null = null;
+  private onError: ErrorListener | null = null;
 
-  on(event: "response" | "error", listener: (...args: never[]) => void): void {
-    if (event === "response") this.onResponse = listener as unknown as typeof this.onResponse;
-    else this.onError = listener as unknown as typeof this.onError;
+  on(event: "response", listener: ResponseListener): void;
+  on(event: "error", listener: ErrorListener): void;
+  on(event: "response" | "error", listener: ResponseListener & ErrorListener): void {
+    if (event === "response") this.onResponse = listener;
+    else this.onError = listener;
   }
 
   query(query: { questions: Question[] }): void {

@@ -4,7 +4,6 @@ import makeMdns from "multicast-dns";
 import {
   CAST_SERVICE,
   createCastRegistry,
-  type CastRegistry,
   type Device,
   type Packet,
   type Question,
@@ -50,7 +49,6 @@ export type Diagnostics = {
 export type DiscoveryParts = {
   onDevices: (devices: Device[]) => void;
   busyId?: () => string | null;
-  registry?: CastRegistry;
   sockets?: Sockets;
 };
 
@@ -72,7 +70,7 @@ const nodeSockets: Sockets = {
 export function createDiscovery(parts: DiscoveryParts) {
   const { onDevices } = parts;
   const busyId = parts.busyId ?? (() => null);
-  const registry = parts.registry ?? createCastRegistry();
+  const registry = createCastRegistry();
   const sockets = parts.sockets ?? nodeSockets;
 
   let discovering = false;

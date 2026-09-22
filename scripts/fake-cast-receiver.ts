@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import mdns from "multicast-dns";
+import type { Answer } from "dns-packet";
 import castv2 from "castv2";
 import { localAddressFor } from "../electron/lan-address.mts";
 import { fetchLikeATv } from "./fake-cast-fetch.ts";
@@ -47,16 +48,16 @@ const records = {
     data: { port: PORT, target: TARGET, priority: 0, weight: 0 },
   },
   A: { name: TARGET, type: "A", ttl: 120, data: IP },
-} as const;
+} satisfies Record<string, Answer>;
 
 const responder = mdns();
 
 responder.on("query", (query, from) => {
   // A question asked from another port wants a unicast answer (RFC 6762 section 6.7).
   const to = from.port === 5353 ? undefined : { port: from.port, address: from.address };
-  const reply = (answers: object[], additionals: object[] = []) =>
+  const reply = (answers: Answer[], additionals: Answer[] = []) =>
     responder.respond(
-      { id: query.id, questions: to ? query.questions : [], answers, additionals } as never,
+      { id: query.id, questions: to ? query.questions : [], answers, additionals },
       to,
     );
 
