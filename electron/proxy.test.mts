@@ -314,3 +314,36 @@ test("answers 404 rather than reaching outside the entry", async () => {
   assert.equal(result.status, 404);
   proxy.stop();
 });
+
+test("opens a lan listener that answers its own token and not the loopback one", async () => {
+  const { proxy } = await proxyWith({});
+  const castPort = await proxy.startCast();
+  assert.ok(castPort && castPort !== proxy.port);
+
+  const playback = proxy.playbackUrl("abc", false) ?? "";
+  const casted = await proxy.castUrl(playback, "127.0.0.1");
+  assert.ok(casted, "a playback url translates");
+
+  const url = new URL(casted ?? "");
+  assert.equal(url.port, String(castPort));
+  const lanToken = url.searchParams.get("t") ?? "";
+  assert.notEqual(lanToken, proxy.token, "the lan token is its own");
+
+  // The loopback token must not open the lan listener.
+  const refused = await get(`http://127.0.0.1:${castPort}/video/proxy?h=abc&t=${proxy.token}`);
+  assert.equal(refused.status, 403);
+  const accepted = await get(`http://127.0.0.1:${castPort}/video/proxy?h=abc&t=${lanToken}`);
+  assert.equal(accepted.status, 410, "reaches the handler, then fails on the unknown handle");
+
+  proxy.stop();
+});
+
+test("closing the cast session takes its token with it", async () => {
+  const { proxy } = await proxyWith({});
+  const castPort = await proxy.startCast();
+  proxy.stopCast();
+
+  assert.equal(proxy.castPort, null);
+  await assert.rejects(get(`http://127.0.0.1:${castPort}/video/proxy?t=x`));
+  proxy.stop();
+});
