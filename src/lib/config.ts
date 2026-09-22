@@ -2,6 +2,7 @@ export type Config = {
   supabaseUrl: string;
   supabaseAnonKey: string;
   apiBase: string | null;
+  captchaSiteKey: string | null;
 };
 
 export type ConfigResult = { ok: true; config: Config } | { ok: false; missing: string[] };
@@ -10,6 +11,7 @@ type Env = {
   VITE_SUPABASE_URL?: string | undefined;
   VITE_SUPABASE_ANON_KEY?: string | undefined;
   VITE_API_BASE?: string | undefined;
+  VITE_TURNSTILE_SITE_KEY?: string | undefined;
 };
 
 export function parseConfig(env: Env): ConfigResult {
@@ -22,12 +24,15 @@ export function parseConfig(env: Env): ConfigResult {
   if (!url || !anonKey) return { ok: false, missing };
 
   const apiBase = env.VITE_API_BASE?.trim();
+  const captchaSiteKey = env.VITE_TURNSTILE_SITE_KEY?.trim();
   return {
     ok: true,
     config: {
       supabaseUrl: url,
       supabaseAnonKey: anonKey,
       apiBase: apiBase ? apiBase.replace(/\/+$/, "") : null,
+      // Optional: only a project with bot protection turned on refuses calls without it.
+      captchaSiteKey: captchaSiteKey || null,
     },
   };
 }

@@ -20,6 +20,7 @@ function start(): JSX.Element {
   const flows = createAuthFlows({
     client,
     bridge: getPlatform()?.auth ?? null,
+    captchaSiteKey: result.config.captchaSiteKey,
     browserRedirect: (purpose: Purpose) =>
       `${window.location.origin}/auth-callback?flow=${purpose}`,
   });

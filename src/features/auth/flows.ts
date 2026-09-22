@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuthBridge } from "../../../shared/platform.ts";
+import { inlineCaptchaToken } from "../../lib/captcha.ts";
 import { countPasswordLeaks } from "../../lib/password-safety.ts";
 
 export type AuthResult = {
@@ -17,14 +18,28 @@ export type FlowParts = {
   // Only used without the desktop bridge: the browser comes back to the page itself, and
   // the purpose has to survive the round trip to know which screen to show on return.
   browserRedirect: (purpose: Purpose) => string;
+  // Absent unless the project turns bot protection on, in which case every auth call is
+  // refused without a token.
+  captchaSiteKey: string | null;
   leaks?: typeof countPasswordLeaks;
+  captcha?: (siteKey: string) => Promise<string | null>;
 };
 
 export const CANCELLED = "cancelled";
 
 export function createAuthFlows(parts: FlowParts) {
-  const { client, bridge, browserRedirect } = parts;
+  const { client, bridge, browserRedirect, captchaSiteKey } = parts;
   const leaks = parts.leaks ?? countPasswordLeaks;
+  const solveCaptcha = parts.captcha ?? inlineCaptchaToken;
+
+  // The desktop opens a page it serves itself; a browser renders the widget in place.
+  async function captchaToken(): Promise<string | undefined> {
+    if (!captchaSiteKey) return undefined;
+    const token = bridge
+      ? await bridge.captchaToken(captchaSiteKey)
+      : await solveCaptcha(captchaSiteKey);
+    return token ?? undefined;
+  }
 
   // A leaked password is refused; a check that could not run is not a reason to refuse.
   async function isLeaked(password: string): Promise<boolean> {
@@ -32,7 +47,12 @@ export function createAuthFlows(parts: FlowParts) {
   }
 
   async function signIn(email: string, password: string): Promise<AuthResult> {
-    const { error } = await client.auth.signInWithPassword({ email: email.trim(), password });
+    const token = await captchaToken();
+    const { error } = await client.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+      ...(token ? { options: { captchaToken: token } } : {}),
+    });
     return { error: error?.message ?? null };
   }
 
@@ -41,10 +61,15 @@ export function createAuthFlows(parts: FlowParts) {
 
     const clean = email.trim();
     const name = displayName.trim() || clean.split("@")[0] || "";
+    const token = await captchaToken();
+    const options = {
+      ...(name ? { data: { full_name: name } } : {}),
+      ...(token ? { captchaToken: token } : {}),
+    };
     const { data, error } = await client.auth.signUp({
       email: clean,
       password,
-      options: name ? { data: { full_name: name } } : undefined,
+      options: Object.keys(options).length ? options : undefined,
     });
     if (error) return { error: error.message };
     return { error: null, needsConfirm: !data.session };
@@ -88,7 +113,11 @@ export function createAuthFlows(parts: FlowParts) {
   // waiting for it: the person is sent back here rather than to a web page we would host.
   async function requestPasswordReset(email: string): Promise<AuthResult> {
     const redirectTo = (await bridge?.redirectUrl()) ?? browserRedirect("recovery");
-    const { error } = await client.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const token = await captchaToken();
+    const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+      ...(token ? { captchaToken: token } : {}),
+    });
     if (error) return { error: error.message };
     // In a browser the link reopens the page, so nothing more happens here.
     if (!bridge) return { error: null, sent: true };

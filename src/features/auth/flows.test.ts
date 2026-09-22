@@ -53,6 +53,7 @@ function fakeBridge(callback: string | null) {
       return true;
     },
     awaitCallback: async () => callback,
+    captchaToken: async () => "captcha-token",
     cancel: async () => {},
   };
   return { bridge, opened };
@@ -65,6 +66,7 @@ const desktop = (callback: string | null, answers: Record<string, unknown> = {})
     client,
     bridge,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => 0,
   });
   return { flows, calls, opened };
@@ -82,6 +84,7 @@ test("a leaked password is refused before an account is created", async () => {
     client,
     bridge: null,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => 42,
   });
 
@@ -97,6 +100,7 @@ test("a check that cannot run lets the sign up through", async () => {
     client,
     bridge: null,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => null,
   });
 
@@ -142,6 +146,7 @@ test("in a browser, the page redirects itself and nothing is exchanged here", as
     client,
     bridge: null,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => 0,
   });
 
@@ -204,6 +209,7 @@ test("in a browser the mail is sent and the link reopens the page later", async 
     client,
     bridge: null,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => 0,
   });
 
@@ -218,6 +224,7 @@ test("the new password is checked against the leaks as well", async () => {
     client,
     bridge: null,
     browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: null,
     leaks: async () => 1,
   });
   assert.deepEqual(await leaked.setPassword("hunter2"), { error: "pwned password" });
@@ -226,4 +233,73 @@ test("the new password is checked against the leaks as well", async () => {
   const { flows, calls: fresh } = desktop(null);
   assert.deepEqual(await flows.setPassword("a-long-unlikely-passphrase"), { error: null });
   assert.deepEqual(fresh[0]?.argument, { password: "a-long-unlikely-passphrase" });
+});
+
+test("with bot protection on, the token travels with every call", async () => {
+  const { client, calls } = fakeClient({
+    signUp: { data: { session: {} }, error: null },
+  });
+  const { bridge } = fakeBridge(null);
+  const asked: string[] = [];
+  const flows = createAuthFlows({
+    client,
+    bridge: { ...bridge, captchaToken: async (key) => (asked.push(key), "from-loopback") },
+    browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: "0x4AAAAAAEFfyKPirwZPGekW",
+    leaks: async () => 0,
+  });
+
+  await flows.signIn("someone@example.test", "secret");
+  await flows.signUp("someone@example.test", "secret", "Zeleff");
+  await flows.requestPasswordReset("someone@example.test");
+
+  assert.deepEqual(asked, Array(3).fill("0x4AAAAAAEFfyKPirwZPGekW"));
+  assert.deepEqual((calls[0]?.argument as { options: unknown }).options, {
+    captchaToken: "from-loopback",
+  });
+  assert.deepEqual((calls[1]?.argument as { options: unknown }).options, {
+    data: { full_name: "Zeleff" },
+    captchaToken: "from-loopback",
+  });
+  assert.deepEqual((calls[2]?.argument as { options: unknown }).options, {
+    redirectTo: "http://127.0.0.1:8351/auth-callback",
+    captchaToken: "from-loopback",
+  });
+});
+
+test("in a browser the widget is rendered in the page instead", async () => {
+  const { client, calls } = fakeClient();
+  const asked: string[] = [];
+  const flows = createAuthFlows({
+    client,
+    bridge: null,
+    browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: "0x4AAAAAAEFfyKPirwZPGekW",
+    leaks: async () => 0,
+    captcha: async (key) => (asked.push(key), "from-widget"),
+  });
+
+  await flows.signIn("someone@example.test", "secret");
+  assert.deepEqual(asked, ["0x4AAAAAAEFfyKPirwZPGekW"]);
+  assert.deepEqual((calls[0]?.argument as { options: unknown }).options, {
+    captchaToken: "from-widget",
+  });
+});
+
+test("a captcha nobody could solve sends the call without a token, and the server says so", async () => {
+  const { client, calls } = fakeClient();
+  const flows = createAuthFlows({
+    client,
+    bridge: null,
+    browserRedirect: (purpose) => `http://localhost:5173/auth-callback?flow=${purpose}`,
+    captchaSiteKey: "0x4AAAAAAEFfyKPirwZPGekW",
+    leaks: async () => 0,
+    captcha: async () => null,
+  });
+
+  await flows.signIn("someone@example.test", "secret");
+  assert.deepEqual(calls[0]?.argument, {
+    email: "someone@example.test",
+    password: "secret",
+  });
 });

@@ -29,3 +29,14 @@ test("drops trailing slashes from the api base", () => {
   const result = parseConfig({ ...complete, VITE_API_BASE: "https://api.example.com//" });
   assert.equal(result.ok && result.config.apiBase, "https://api.example.com");
 });
+
+test("the captcha key is optional, and blank is the same as absent", () => {
+  const without = parseConfig(complete);
+  assert.equal(without.ok && without.config.captchaSiteKey, null);
+
+  const blank = parseConfig({ ...complete, VITE_TURNSTILE_SITE_KEY: "   " });
+  assert.equal(blank.ok && blank.config.captchaSiteKey, null);
+
+  const given = parseConfig({ ...complete, VITE_TURNSTILE_SITE_KEY: " 0x4AAAAAAEFfy " });
+  assert.equal(given.ok && given.config.captchaSiteKey, "0x4AAAAAAEFfy");
+});
