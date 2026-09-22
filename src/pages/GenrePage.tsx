@@ -11,7 +11,10 @@ type GenreProps = { catalog: Catalog; store: ResourceStore };
 
 export function GenrePage({ catalog, store }: GenreProps) {
   const { genre = "" } = useParams();
-  const [page, setPage] = useState(1);
+  // Paging belongs to the genre being read: moving to another one starts at its first page
+  // rather than asking for page seven of something that may only have two.
+  const [paging, setPaging] = useState({ genre, page: 1 });
+  const page = paging.genre === genre ? paging.page : 1;
   const { data, loading, error, reload } = useResource(
     store,
     `genre:${genre}:${String(page)}`,
@@ -30,7 +33,7 @@ export function GenrePage({ catalog, store }: GenreProps) {
       {!data && error && <Empty title="Chargement impossible" note={error} onRetry={reload} />}
 
       {data?.hasMore && (
-        <Button variant="ghost" onClick={() => setPage(page + 1)}>
+        <Button variant="ghost" onClick={() => setPaging({ genre, page: page + 1 })}>
           Page suivante
         </Button>
       )}
