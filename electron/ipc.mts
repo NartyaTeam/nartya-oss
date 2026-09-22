@@ -1,5 +1,6 @@
-import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { app, ipcMain, shell, type IpcMainInvokeEvent } from "electron";
 import type { AppInfo, Channel, OsPlatform } from "../shared/platform.ts";
+import { createAuth, type Auth } from "./auth.mts";
 
 export type IsAppUrl = (url: string) => boolean;
 
@@ -10,10 +11,14 @@ function isTrustedSender(event: IpcMainInvokeEvent, isAppUrl: IsAppUrl): boolean
   return frame !== null && frame.parent === null && isAppUrl(frame.url);
 }
 
-export function secureHandle<T>(channel: Channel, isAppUrl: IsAppUrl, reply: () => T): void {
-  ipcMain.handle(channel, (event) => {
+export function secureHandle<T>(
+  channel: Channel,
+  isAppUrl: IsAppUrl,
+  reply: (argument: unknown) => T,
+): void {
+  ipcMain.handle(channel, (event, argument: unknown) => {
     if (!isTrustedSender(event, isAppUrl)) throw new Error(`${channel}: untrusted sender`);
-    return reply();
+    return reply(argument);
   });
 }
 
@@ -27,4 +32,12 @@ export function registerPlatformHandlers(isAppUrl: IsAppUrl): void {
     version: app.getVersion(),
     platform: osPlatform(),
   }));
+  registerAuthHandlers(isAppUrl, createAuth({ openUrl: (url) => shell.openExternal(url) }));
+}
+
+export function registerAuthHandlers(isAppUrl: IsAppUrl, auth: Auth): void {
+  secureHandle("auth-redirect-url", isAppUrl, () => auth.redirectUrl());
+  secureHandle("auth-open", isAppUrl, (url) => auth.open(url));
+  secureHandle("auth-await-callback", isAppUrl, () => auth.awaitCallback());
+  secureHandle("auth-cancel", isAppUrl, () => auth.cancel());
 }
