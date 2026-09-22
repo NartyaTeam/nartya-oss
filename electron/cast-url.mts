@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { localAddressFor } from "./lan-address.mts";
 
 export type CastTarget = {
@@ -24,10 +25,17 @@ export function toCastUrl(localUrl: string, target: CastTarget): string | null {
   if (url.port !== String(target.port)) return null;
   if (!LOOPBACK.has(url.hostname)) return null;
   if (!ROUTES.has(url.pathname)) return null;
-  if (url.searchParams.get("t") !== target.token) return null;
+  if (!sameToken(url.searchParams.get("t"), target.token)) return null;
 
   url.hostname = localAddressFor(target.deviceIp);
   url.port = String(target.castPort);
   url.searchParams.set("t", target.castToken);
   return url.toString();
+}
+
+function sameToken(given: string | null, expected: string): boolean {
+  if (given === null) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }

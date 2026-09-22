@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import { transformPlaylist } from "./hls-playlist.mts";
 import { toCastUrl } from "./cast-url.mts";
+import { createCastListener } from "./proxy-cast.mts";
 import { createLogger } from "./log.mts";
 import { fetchUrl, type ProviderResponse } from "./provider-fetch.mts";
 import { buildProviderRequest } from "./provider-request.mts";
@@ -51,18 +52,14 @@ export function createProxy(parts: ProxyParts) {
   let server: http.Server | null = null;
   let port: number | null = null;
   let token: string | null = null;
-  // A second listener, open on the local network only while casting: the television
-  // fetches the video itself, with the per host headers added here.
-  let castServer: http.Server | null = null;
-  let castPort: number | null = null;
-  let castToken: string | null = null;
+  const cast = createCastListener((request, response) => void handle(request, response, true));
 
   // Trusted only when the Host port is one of ours: a forged Host would otherwise poison
   // the segment urls we hand back.
   function publicOrigin(request: http.IncomingMessage): string {
     const host = request.headers.host;
     const asked = Number(host?.split(":").pop());
-    if (host && (asked === port || (castPort !== null && asked === castPort))) {
+    if (host && (asked === port || (cast.port !== null && asked === cast.port))) {
       return `http://${host}`;
     }
     return `http://127.0.0.1:${port}`;
@@ -215,7 +212,7 @@ export function createProxy(parts: ProxyParts) {
     const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
     // Without a token any page open in a browser on this machine could use the proxy,
     // which answers with Allow-Origin *. On the lan listener, anyone on the network could.
-    const expected = onLan ? castToken : token;
+    const expected = onLan ? cast.token : token;
     if (!sameToken(url.searchParams.get("t"), expected)) {
       fail(response, 403, "Jeton invalide");
       return;
@@ -256,42 +253,21 @@ export function createProxy(parts: ProxyParts) {
     });
   }
 
-  // Opened only while casting, and closed with its token when the session ends.
-  async function startCast(): Promise<number | null> {
-    if (castPort !== null) return castPort;
-    castToken = crypto.randomBytes(24).toString("base64url");
-    const listener = http.createServer((request, response) => void handle(request, response, true));
-
-    return new Promise((resolve, reject) => {
-      listener.on("error", reject);
-      listener.listen(0, "0.0.0.0", () => {
-        const address = listener.address();
-        castPort = typeof address === "object" && address ? address.port : null;
-        castServer = listener;
-        log.info("cast listener open", { port: castPort });
-        resolve(castPort);
-      });
+  async function castUrl(localUrl: string, deviceIp: string): Promise<string | null> {
+    if (port === null || token === null) return null;
+    await cast.start();
+    if (cast.port === null || cast.token === null) return null;
+    return toCastUrl(localUrl, {
+      port,
+      token,
+      castPort: cast.port,
+      castToken: cast.token,
+      deviceIp,
     });
   }
 
-  function stopCast(): void {
-    if (!castServer) return;
-    castServer.close();
-    castServer = null;
-    castPort = null;
-    castToken = null;
-    log.info("cast listener closed");
-  }
-
-  async function castUrl(localUrl: string, deviceIp: string): Promise<string | null> {
-    if (port === null || token === null) return null;
-    await startCast();
-    if (castPort === null || castToken === null) return null;
-    return toCastUrl(localUrl, { port, token, castPort, castToken, deviceIp });
-  }
-
   function stop(): void {
-    stopCast();
+    cast.stop();
     if (!server) return;
     server.close();
     server = null;
@@ -315,8 +291,8 @@ export function createProxy(parts: ProxyParts) {
   return {
     start,
     stop,
-    startCast,
-    stopCast,
+    startCast: cast.start,
+    stopCast: cast.stop,
     castUrl,
     playbackUrl,
     localFileUrl,
@@ -328,7 +304,7 @@ export function createProxy(parts: ProxyParts) {
       return token;
     },
     get castPort() {
-      return castPort;
+      return cast.port;
     },
   };
 }

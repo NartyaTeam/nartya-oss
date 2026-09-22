@@ -119,3 +119,12 @@ test("closing the cast session takes its token with it", async () => {
   await assert.rejects(get(`http://127.0.0.1:${castPort}/video/proxy?t=x`));
   proxy.stop();
 });
+
+test("two cast sessions starting at once open one listener", async () => {
+  const { proxy } = await proxyWith();
+  const [first, second] = await Promise.all([proxy.startCast(), proxy.startCast()]);
+
+  assert.equal(first, second, "a second listener would leak a port and a token");
+  assert.equal(proxy.castPort, first);
+  proxy.stop();
+});
