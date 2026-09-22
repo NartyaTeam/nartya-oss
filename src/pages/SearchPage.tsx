@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Catalog } from "../features/catalog/catalog.ts";
 import { ResultsGrid } from "../features/catalog/ui/ResultsGrid.tsx";
 import type { SearchFilters } from "../features/catalog/types.ts";
@@ -26,8 +27,16 @@ const EMPTY: SearchFilters = { search: "", genres: [], type: "", lang: "", page:
 type SearchProps = { catalog: Catalog; store: ResourceStore };
 
 export function SearchPage({ catalog, store }: SearchProps) {
-  const [typed, setTyped] = useState("");
-  const [filters, setFilters] = useState<SearchFilters>(EMPTY);
+  const [params] = useSearchParams();
+  const query = params.get("q") ?? "";
+  const [typed, setTyped] = useState(query);
+  const [filters, setFilters] = useState<SearchFilters>({ ...EMPTY, search: query });
+
+  // The top bar hands the term over through the url, so arriving with one runs that search.
+  useEffect(() => {
+    setTyped(query);
+    setFilters({ ...EMPTY, search: query });
+  }, [query]);
 
   // The query is what identifies the read, so the cache key is the query itself.
   const key = `search:${JSON.stringify(filters)}`;
@@ -43,7 +52,7 @@ export function SearchPage({ catalog, store }: SearchProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 px-4 pb-24 pt-24 sm:px-8">
       <form className="flex flex-wrap items-end gap-3" onSubmit={submit}>
         <div className="min-w-64 flex-1">
           <Field

@@ -48,3 +48,31 @@
     background: rgb(var(--primary) / 0.6);
   }
 }
+
+@layer components {
+  /* Loading block with a sweep, so a cover arriving late is not a black hole. */
+  .skeleton {
+    @apply relative overflow-hidden bg-surface-2;
+  }
+
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+  }
+}
+
+@layer utilities {
+  /* Titles sitting on key art: the glow is what keeps them readable on a bright frame. */
+  .text-glow {
+    text-shadow: 0 2px 30px rgb(0 0 0 / 0.9);
+  }
+
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
+}

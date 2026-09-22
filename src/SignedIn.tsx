@@ -30,14 +30,20 @@ export function SignedIn({ session, profile, catalog, store, onSignOut }: Signed
             <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
             <Route
               path="*"
-              element={<Empty title="Page inconnue" note="Ce lien ne mène nulle part." />}
+              element={
+                <div className="px-4 pt-16 sm:px-8">
+                  <Empty title="Page inconnue" note="Ce lien ne mène nulle part." />
+                </div>
+              }
             />
           </Routes>
         ) : (
-          <Empty
-            title="Catalogue non configuré"
-            note="Renseigne VITE_API_BASE pour lire un catalogue. Le catalogue de démonstration arrivera avec le lecteur."
-          />
+          <div className="px-4 pt-16 sm:px-8">
+            <Empty
+              title="Catalogue non configuré"
+              note="Renseigne VITE_API_BASE pour lire un catalogue. Le catalogue de démonstration arrivera avec le lecteur."
+            />
+          </div>
         )}
       </Shell>
     </HashRouter>

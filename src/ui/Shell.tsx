@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
 import type { Profile } from "../features/session/profile.ts";
+import { Sidebar } from "./Sidebar.tsx";
+import { TopBar } from "./TopBar.tsx";
 
 type ShellProps = {
   profile: Profile | null;
@@ -9,38 +11,23 @@ type ShellProps = {
   children: ReactNode;
 };
 
-const TABS = [
-  { to: "/", label: "Accueil" },
-  { to: "/recherche", label: "Rechercher" },
-];
+const HALO = "radial-gradient(80% 50% at 80% -10%, rgb(255 74 45 / 0.14), transparent 60%)";
 
 export function Shell({ profile, email, onSignOut, children }: ShellProps) {
+  const [scrolled, setScrolled] = useState(false);
+
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <header className="sticky top-0 z-20 border-b border-line/60 bg-bg/85 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
-          <span className="font-display text-lg font-bold tracking-wide text-text">Nartya</span>
-          {TABS.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.to === "/"}
-              className={({ isActive }) =>
-                `text-sm transition ${isActive ? "text-text" : "text-muted hover:text-text"}`
-              }
-            >
-              {tab.label}
-            </NavLink>
-          ))}
-          <div className="ml-auto flex items-center gap-3 text-sm text-muted">
-            <span>{profile?.username ?? email ?? ""}</span>
-            <button className="transition hover:text-primary" onClick={onSignOut}>
-              Se déconnecter
-            </button>
-          </div>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-6xl animate-fade-in px-6 py-8">{children}</main>
+    <div className="flex h-full w-full overflow-hidden bg-bg text-text">
+      <div className="pointer-events-none fixed inset-0 z-0" style={{ background: HALO }} />
+      <Sidebar profile={profile} email={email} onSignOut={onSignOut} />
+      <main
+        onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 40)}
+        className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden"
+      >
+        <TopBar scrolled={scrolled} />
+        {/* The page rises under the transparent bar, which is what lets the hero pass below it. */}
+        <div className="-mt-16">{children}</div>
+      </main>
     </div>
   );
 }

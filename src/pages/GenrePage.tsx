@@ -22,7 +22,7 @@ export function GenrePage({ catalog, store }: GenreProps) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 px-4 pb-24 pt-24 sm:px-8">
       <h1 className="font-display text-3xl font-black">{genre}</h1>
 
       {loading && !data && <p className="text-sm text-muted">Chargement…</p>}
