@@ -61,6 +61,7 @@ export function createAuth(parts: AuthParts) {
   function done(url: string | null): void {
     // The browser can come back before the renderer starts waiting, and a callback that
     // lands on nobody would otherwise leave the sign in hanging until it times out.
+    if (url !== null) log.info("callback received", { url });
     if (url !== null && !pending) arrived = url;
     else settle(url);
     closeWhenIdle();
@@ -142,6 +143,7 @@ export function createAuth(parts: AuthParts) {
     }
     try {
       await openUrl(url);
+      log.info("sign in opened in the browser", { url });
       return true;
     } catch (error) {
       log.warn("the system refused to open the browser", { err: error });
