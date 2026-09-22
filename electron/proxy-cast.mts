@@ -13,6 +13,8 @@ export function createCastListener(handle: Handler) {
   let port: number | null = null;
   let token: string | null = null;
   let starting: Promise<number | null> | null = null;
+  // Whether the television ever reached us tells a blocked firewall from an unplayable file.
+  const seen = new Map<string, number>();
 
   function start(): Promise<number | null> {
     if (port !== null) return Promise.resolve(port);
@@ -21,7 +23,11 @@ export function createCastListener(handle: Handler) {
     if (starting) return starting;
 
     token = crypto.randomBytes(24).toString("base64url");
-    const listener = http.createServer(handle);
+    const listener = http.createServer((request, response) => {
+      const from = request.socket.remoteAddress;
+      if (from) seen.set(from.replace(/^::ffff:/, ""), Date.now());
+      handle(request, response);
+    });
 
     starting = new Promise<number | null>((resolve, reject) => {
       listener.on("error", reject);
@@ -40,6 +46,7 @@ export function createCastListener(handle: Handler) {
 
   function stop(): void {
     starting = null;
+    seen.clear();
     if (!server) return;
     server.close();
     server = null;
@@ -51,6 +58,7 @@ export function createCastListener(handle: Handler) {
   return {
     start,
     stop,
+    lastRequestFrom: (ip: string) => seen.get(ip) ?? 0,
     get port() {
       return port;
     },

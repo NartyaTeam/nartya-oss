@@ -110,6 +110,22 @@ test("opens a lan listener that answers its own token and not the loopback one",
   proxy.stop();
 });
 
+test("remembers which devices came to the lan listener, and forgets on close", async () => {
+  const { proxy } = await proxyWith();
+  const castPort = await proxy.startCast();
+  assert.equal(proxy.lastCastRequestFrom("127.0.0.1"), 0);
+
+  const asked = Date.now();
+  await get(`http://127.0.0.1:${castPort}/video/proxy?h=abc&t=nope`);
+  // A refused request still proves the device reached this machine, which is the question.
+  assert.ok(proxy.lastCastRequestFrom("127.0.0.1") >= asked);
+  assert.equal(proxy.lastCastRequestFrom("192.168.1.42"), 0);
+
+  proxy.stopCast();
+  assert.equal(proxy.lastCastRequestFrom("127.0.0.1"), 0);
+  proxy.stop();
+});
+
 test("closing the cast session takes its token with it", async () => {
   const { proxy } = await proxyWith();
   const castPort = await proxy.startCast();

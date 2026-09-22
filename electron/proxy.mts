@@ -293,6 +293,7 @@ export function createProxy(parts: ProxyParts) {
     stop,
     startCast: cast.start,
     stopCast: cast.stop,
+    lastCastRequestFrom: cast.lastRequestFrom,
     castUrl,
     playbackUrl,
     localFileUrl,
