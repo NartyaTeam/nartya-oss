@@ -58,7 +58,7 @@ test("asks for what is missing instead of giving up", () => {
 });
 
 test("does not ask the same follow up twice in a row", () => {
-  let clock = 1_000;
+  const clock = 1_000;
   const registry = createCastRegistry(() => clock);
   const first = registry.ingest(announcement(false), "192.168.1.42");
   const second = registry.ingest(announcement(false), "192.168.1.42");
