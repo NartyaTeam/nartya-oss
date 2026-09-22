@@ -11,6 +11,7 @@ const platform: Platform = {
     redirectUrl: () => invoke("auth-redirect-url"),
     open: (url) => invoke("auth-open", url),
     awaitCallback: () => invoke("auth-await-callback"),
+    captchaToken: (siteKey) => invoke("auth-captcha", siteKey),
     cancel: () => invoke("auth-cancel"),
   },
 };

@@ -1,7 +1,10 @@
 import http from "node:http";
+import { captchaPage, isSiteKey } from "./captcha.mts";
 
 const HOST = "127.0.0.1";
 const CALLBACK_PATH = "/auth-callback";
+const CAPTCHA_PATH = "/captcha";
+const CAPTCHA_TOKEN_PATH = "/captcha-token";
 
 // A custom scheme is unreliable on Linux and ChromeOS, where the system browser does not
 // hand the deep link to the app, so RFC 8252 loopback is the default.
@@ -10,6 +13,8 @@ const CALLBACK_PATH = "/auth-callback";
 export const CANDIDATE_PORTS = [8351, 8352, 8353];
 
 export type OnCallback = (url: string) => void;
+
+export type Handlers = { onCallback: OnCallback; onCaptcha: (token: string) => void };
 
 export type ErrorCopy = { title: string; message: string };
 
@@ -64,7 +69,12 @@ ${closes ? "<script>setTimeout(function(){try{window.close()}catch(e){}},800)</s
 export function createAuthCallbackServer(ports: number[] = CANDIDATE_PORTS) {
   let server: http.Server | null = null;
   let port: number | null = null;
-  let onCallback: OnCallback | null = null;
+  let handlers: Handlers | null = null;
+
+  function send(response: http.ServerResponse, status: number, html: string): void {
+    response.writeHead(status, { "content-type": "text/html; charset=utf-8" });
+    response.end(html);
+  }
 
   function handle(request: http.IncomingMessage, response: http.ServerResponse): void {
     let parsed: URL;
@@ -76,13 +86,35 @@ export function createAuthCallbackServer(ports: number[] = CANDIDATE_PORTS) {
       return;
     }
 
+    if (parsed.pathname === CAPTCHA_PATH) {
+      const key = parsed.searchParams.get("key");
+      if (!isSiteKey(key)) {
+        send(
+          response,
+          400,
+          page("Clé manquante", "L'application n'a pas de clé de captcha.", false),
+        );
+        return;
+      }
+      send(response, 200, captchaPage(key, CAPTCHA_TOKEN_PATH));
+      return;
+    }
+
+    if (parsed.pathname === CAPTCHA_TOKEN_PATH) {
+      const token = parsed.searchParams.get("token") ?? "";
+      if (token) handlers?.onCaptcha(token);
+      response.writeHead(token ? 200 : 400, { "content-type": "text/plain" });
+      response.end(token ? "ok" : "no token");
+      return;
+    }
+
     if (parsed.pathname !== CALLBACK_PATH) {
       response.writeHead(404, { "content-type": "text/plain" });
       response.end("Not Found");
       return;
     }
 
-    onCallback?.(`http://${HOST}:${String(port)}${request.url ?? ""}`);
+    handlers?.onCallback(`http://${HOST}:${String(port)}${request.url ?? ""}`);
 
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     if (parsed.searchParams.has("code")) {
@@ -111,8 +143,8 @@ export function createAuthCallbackServer(ports: number[] = CANDIDATE_PORTS) {
   }
 
   return {
-    async start(callback: OnCallback): Promise<number | null> {
-      onCallback = callback;
+    async start(next: Handlers): Promise<number | null> {
+      handlers = next;
       for (const candidate of ports) {
         try {
           server = await listen(candidate);
@@ -128,6 +160,11 @@ export function createAuthCallbackServer(ports: number[] = CANDIDATE_PORTS) {
 
     redirectUrl(): string | null {
       return port === null ? null : `http://${HOST}:${String(port)}${CALLBACK_PATH}`;
+    },
+
+    captchaUrl(siteKey: string): string | null {
+      if (port === null) return null;
+      return `http://${HOST}:${String(port)}${CAPTCHA_PATH}?key=${encodeURIComponent(siteKey)}`;
     },
 
     stop(): void {

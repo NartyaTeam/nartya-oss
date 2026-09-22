@@ -1,27 +1,35 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Handlers } from "./auth-callback.mts";
 import { createAuth, type CallbackServer } from "./auth.mts";
 
 function fakeServer() {
-  let deliver: ((url: string) => void) | null = null;
+  let live: Handlers | null = null;
   const state = { started: 0, stopped: 0, port: null as number | null, ports: [8351] };
 
   const server: CallbackServer = {
-    start: async (callback) => {
+    start: async (handlers) => {
       state.started += 1;
-      deliver = callback;
+      live = handlers;
       state.port = state.ports[0] ?? null;
       return state.port;
     },
     redirectUrl: () =>
       state.port === null ? null : `http://127.0.0.1:${state.port}/auth-callback`,
+    captchaUrl: (siteKey) =>
+      state.port === null ? null : `http://127.0.0.1:${state.port}/captcha?key=${siteKey}`,
     stop: () => {
       state.stopped += 1;
       state.port = null;
     },
   };
 
-  return { server, state, call: (url: string) => deliver?.(url) };
+  return {
+    server,
+    state,
+    call: (url: string) => live?.onCallback(url),
+    solve: (token: string) => live?.onCaptcha(token),
+  };
 }
 
 const tick = () => new Promise((done) => setImmediate(done));
@@ -106,4 +114,60 @@ test("a browser that refuses to open is an answer, not a crash", async () => {
   });
 
   assert.equal(await auth.open("https://auth.example.test/authorize"), false);
+});
+
+test("opens its own captcha page and hands the token back", async () => {
+  const opened: string[] = [];
+  const { server, state, solve } = fakeServer();
+  const auth = createAuth({ server, openUrl: async (url) => void opened.push(url) });
+
+  const waiting = auth.captchaToken("0x4AAAAAAEFfyKPirwZPGekW");
+  await tick();
+  // Ours, on loopback, so it is opened without going through the https rule.
+  assert.deepEqual(opened, ["http://127.0.0.1:8351/captcha?key=0x4AAAAAAEFfyKPirwZPGekW"]);
+
+  solve("solved");
+  assert.equal(await waiting, "solved");
+  await tick();
+  assert.equal(state.stopped, 1);
+});
+
+test("a site key that is not one opens nothing", async () => {
+  const opened: string[] = [];
+  const { server, state } = fakeServer();
+  const auth = createAuth({ server, openUrl: async (url) => void opened.push(url) });
+
+  assert.equal(await auth.captchaToken(""), null);
+  assert.equal(await auth.captchaToken(undefined), null);
+  assert.deepEqual(opened, []);
+  assert.equal(state.started, 0);
+});
+
+test("an unsolved captcha gives up and closes the port", async () => {
+  const { server, state } = fakeServer();
+  const auth = createAuth({ server, openUrl: async () => {}, waitMs: 5 });
+
+  assert.equal(await auth.captchaToken("0x4AAAAAAEFfyKPirwZPGekW"), null);
+  await tick();
+  assert.equal(state.stopped, 1);
+});
+
+test("a captcha solved mid sign in leaves the port open for the callback", async () => {
+  const { server, state, call, solve } = fakeServer();
+  const auth = createAuth({ server, openUrl: async () => {} });
+  await auth.redirectUrl();
+
+  const signingIn = auth.awaitCallback();
+  const captcha = auth.captchaToken("0x4AAAAAAEFfyKPirwZPGekW");
+  await tick();
+  solve("solved");
+  assert.equal(await captcha, "solved");
+
+  await tick();
+  assert.equal(state.stopped, 0, "the sign in still needs the port");
+
+  call("http://127.0.0.1:8351/auth-callback?code=abc");
+  assert.equal(await signingIn, "http://127.0.0.1:8351/auth-callback?code=abc");
+  await tick();
+  assert.equal(state.stopped, 1);
 });

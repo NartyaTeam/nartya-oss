@@ -16,3 +16,7 @@ export const DEMO_STREAMS = [
     url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8",
   },
 ];
+
+// Turnstile, loaded by the captcha page the loopback server serves. The site key is public
+// and comes from configuration, never from here.
+export const TURNSTILE_SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js";

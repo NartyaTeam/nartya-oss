@@ -39,6 +39,19 @@ async function run(): Promise<void> {
     fail(`unexpected platform ${String(platform)}`);
   }
 
+  const redirect: unknown = await window.webContents
+    .executeJavaScript("window.platform.auth.redirectUrl()")
+    .catch((error: unknown) => fail(`auth bridge rejected: ${String(error)}`));
+  if (typeof redirect !== "string" || !redirect.startsWith("http://127.0.0.1:")) {
+    fail(`expected a loopback redirect, got ${String(redirect)}`);
+  }
+
+  const opened: unknown = await window.webContents.executeJavaScript(
+    'window.platform.auth.open("file:///etc/passwd")',
+  );
+  if (opened !== false) fail("the bridge opened something that is not https");
+  await window.webContents.executeJavaScript("window.platform.auth.cancel()");
+
   const intruder = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -57,7 +70,8 @@ async function run(): Promise<void> {
   if (!rejected) fail("a page that is not the app reached the bridge");
 
   console.log(
-    `smoke: bridge answered version ${version} on ${platform}, and refused a foreign page`,
+    `smoke: bridge answered version ${version} on ${platform}, served ${redirect}, ` +
+      "refused a file url and a foreign page",
   );
   app.exit(0);
 }

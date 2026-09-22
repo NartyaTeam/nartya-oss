@@ -39,5 +39,6 @@ export function registerAuthHandlers(isAppUrl: IsAppUrl, auth: Auth): void {
   secureHandle("auth-redirect-url", isAppUrl, () => auth.redirectUrl());
   secureHandle("auth-open", isAppUrl, (url) => auth.open(url));
   secureHandle("auth-await-callback", isAppUrl, () => auth.awaitCallback());
+  secureHandle("auth-captcha", isAppUrl, (siteKey) => auth.captchaToken(siteKey));
   secureHandle("auth-cancel", isAppUrl, () => auth.cancel());
 }

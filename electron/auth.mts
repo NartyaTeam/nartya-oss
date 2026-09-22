@@ -1,9 +1,11 @@
-import { createAuthCallbackServer } from "./auth-callback.mts";
+import { createAuthCallbackServer, type Handlers } from "./auth-callback.mts";
+import { isSiteKey } from "./captcha.mts";
 import { createLogger } from "./log.mts";
 
 export type CallbackServer = {
-  start: (callback: (url: string) => void) => Promise<number | null>;
+  start: (handlers: Handlers) => Promise<number | null>;
   redirectUrl: () => string | null;
+  captchaUrl: (siteKey: string) => string | null;
   stop: () => void;
 };
 
@@ -28,6 +30,8 @@ export function createAuth(parts: AuthParts) {
 
   let pending: ((url: string | null) => void) | null = null;
   let timer: NodeJS.Timeout | null = null;
+  let waitingCaptcha: ((token: string | null) => void) | null = null;
+  let captchaTimer: NodeJS.Timeout | null = null;
 
   function settle(url: string | null): void {
     const waiting = pending;
@@ -37,20 +41,72 @@ export function createAuth(parts: AuthParts) {
     waiting?.(url);
   }
 
+  function settleCaptcha(token: string | null): void {
+    const waiting = waitingCaptcha;
+    waitingCaptcha = null;
+    if (captchaTimer) clearTimeout(captchaTimer);
+    captchaTimer = null;
+    waiting?.(token);
+  }
+
+  // The page the browser is on is written after the handler returns, so the port closes a
+  // tick later, and only once nothing else is waiting on it.
+  function closeWhenIdle(): void {
+    setImmediate(() => {
+      if (!pending && !waitingCaptcha) server.stop();
+    });
+  }
+
   function done(url: string | null): void {
     settle(url);
-    // The callback page is written after this returns, so the port closes a tick later.
-    setImmediate(() => server.stop());
+    closeWhenIdle();
+  }
+
+  function captchaDone(token: string | null): void {
+    settleCaptcha(token);
+    closeWhenIdle();
+  }
+
+  async function listening(): Promise<boolean> {
+    if (server.redirectUrl()) return true;
+    await server.start({ onCallback: done, onCaptcha: captchaDone });
+    if (server.redirectUrl()) return true;
+    log.warn("no loopback port available");
+    return false;
   }
 
   async function redirectUrl(): Promise<string | null> {
-    const current = server.redirectUrl();
-    if (current) return current;
+    return (await listening()) ? server.redirectUrl() : null;
+  }
 
-    await server.start(done);
-    const started = server.redirectUrl();
-    if (!started) log.warn("no loopback port available for the auth callback");
-    return started;
+  // The captcha page is ours and lives on this loopback port, so it is opened directly:
+  // the https rule guards what the renderer asks for, not what we built.
+  async function captchaToken(siteKey: unknown): Promise<string | null> {
+    if (!isSiteKey(siteKey)) {
+      log.warn("no usable captcha site key");
+      return null;
+    }
+    if (!(await listening())) return null;
+
+    const url = server.captchaUrl(siteKey);
+    if (!url) return null;
+
+    settleCaptcha(null);
+    const solved = new Promise<string | null>((resolve) => {
+      waitingCaptcha = resolve;
+      captchaTimer = setTimeout(() => {
+        log.info("captcha timed out");
+        captchaDone(null);
+      }, waitMs);
+    });
+
+    try {
+      await openUrl(url);
+    } catch (error) {
+      log.warn("the system refused to open the captcha page", { err: error });
+      captchaDone(null);
+    }
+    return solved;
   }
 
   function awaitCallback(): Promise<string | null> {
@@ -82,7 +138,16 @@ export function createAuth(parts: AuthParts) {
     }
   }
 
-  return { redirectUrl, awaitCallback, open, cancel: () => done(null) };
+  return {
+    redirectUrl,
+    awaitCallback,
+    captchaToken,
+    open,
+    cancel: () => {
+      settleCaptcha(null);
+      done(null);
+    },
+  };
 }
 
 export type Auth = ReturnType<typeof createAuth>;
