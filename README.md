@@ -27,7 +27,9 @@ npm run dev
 ```
 
 `npm run electron` builds the main process and opens the desktop shell. Copy `.env.example`
-to `.env` first; both Supabase values are public by design.
+to `.env` first; both Supabase values are public by design. Playback needs `VITE_API_BASE`:
+the main process resolves streams itself and reads that same `.env` when the build carries no
+address, or `NARTYA_API_BASE` when it is set.
 
 ## Checks
 

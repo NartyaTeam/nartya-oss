@@ -11,7 +11,20 @@ function fromFile(dir: string): string | null {
     const parsed = JSON.parse(raw) as BuildConfig;
     return typeof parsed.apiBase === "string" ? parsed.apiBase : null;
   } catch {
-    // No file is the normal case for a source checkout: the app runs on the demo recipe.
+    return null;
+  }
+}
+
+// A source checkout has no build-config: the address then comes from the .env the front
+// end already reads, two levels above the compiled main process.
+function fromDotEnv(dir: string): string | null {
+  try {
+    const raw = readFileSync(join(dir, "..", "..", ".env"), "utf8");
+    const line = raw.split(/\r?\n/).find((entry) => entry.trimStart().startsWith("VITE_API_BASE="));
+    if (!line) return null;
+    const value = line.slice(line.indexOf("=") + 1).trim();
+    return value.replace(/^["']|["']$/g, "");
+  } catch {
     return null;
   }
 }
@@ -31,5 +44,7 @@ export function normalize(value: string | null | undefined): string | null {
 }
 
 export function readApiBase(dir: string, env: NodeJS.ProcessEnv = process.env): string | null {
-  return normalize(env["NARTYA_API_BASE"]) ?? normalize(fromFile(dir));
+  return (
+    normalize(env["NARTYA_API_BASE"]) ?? normalize(fromFile(dir)) ?? normalize(fromDotEnv(dir))
+  );
 }
