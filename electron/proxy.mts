@@ -286,6 +286,7 @@ export const localProxy = createProxy({
   cache: segmentCache,
   fetch: fetchUrl,
   detectKey: (url) => sourceRecipe.detectKey(url),
-  // Replaced once the download manager knows its root, in initDownloads.
+  // Downloads are not wired to a window yet, so nothing local can be served. Replaced
+  // when the downloads page arrives and the manager knows its root.
   localFile: () => null,
 });

@@ -39,9 +39,17 @@ export function createDownloads(parts: Parts) {
     if (item) onChange(item);
   }
 
-  function progress(id: string, percent: number, sizeBytes: number): void {
-    store.set(id, { status: "downloading", percent, sizeBytes });
+  // Writing to an id that is gone would recreate a record with no title, pointing at a
+  // folder that was deleted. Every write during a download goes through here.
+  function update(id: string, patch: Partial<DownloadItem>, now = false): boolean {
+    if (!store.get(id)) return false;
+    store.set(id, patch, { now });
     emit(id);
+    return true;
+  }
+
+  function progress(id: string, percent: number, sizeBytes: number): void {
+    update(id, { status: "downloading", percent, sizeBytes });
   }
 
   async function run(pending: Pending): Promise<void> {
@@ -50,13 +58,11 @@ export function createDownloads(parts: Parts) {
     active.set(id, controller);
 
     try {
-      store.set(id, { status: "downloading", percent: 0 });
-      emit(id);
-
       const item = store.get(id);
       if (!item) return;
+      update(id, { status: "downloading", percent: 0 });
       const dir = itemFolder(root(), id);
-      let file: string;
+      let file: string | undefined;
       let sizeBytes: number;
 
       if (item.type === "scan") {
@@ -69,7 +75,6 @@ export function createDownloads(parts: Parts) {
           signal: controller.signal,
           onProgress: (done, total, bytes) => progress(id, (done / total) * 100, bytes),
         });
-        file = "";
       } else if (/\.m3u8(\?|$)/i.test(pending.url ?? "")) {
         const result = await downloadHls(
           fetch,
@@ -80,10 +85,7 @@ export function createDownloads(parts: Parts) {
             maxHeight: pending.maxHeight ?? Infinity,
             signal: controller.signal,
             onProgress: (done, total, bytes) => progress(id, (done / total) * 100, bytes),
-            onRemux: () => {
-              store.set(id, { status: "processing", percent: 99 });
-              emit(id);
-            },
+            onRemux: () => update(id, { status: "processing", percent: 99 }),
           },
           await ffmpeg(),
         );
@@ -101,12 +103,7 @@ export function createDownloads(parts: Parts) {
         file = "video.mp4";
       }
 
-      store.set(
-        id,
-        { status: "done", percent: 100, sizeBytes, finishedAt: Date.now() },
-        { now: true },
-      );
-      emit(id);
+      update(id, { status: "done", percent: 100, file, sizeBytes, finishedAt: Date.now() }, true);
       log.info("done", { id, file, sizeBytes });
     } catch (error) {
       if (controller.signal.aborted) {
@@ -114,11 +111,8 @@ export function createDownloads(parts: Parts) {
         return;
       }
       // The technical detail stays in the log: the interface never shows a raw node error.
-      if (store.get(id)) {
-        log.warn("failed", { id, err: error });
-        store.set(id, { status: "error", error: friendlyErrorMessage(error) }, { now: true });
-        emit(id);
-      }
+      log.warn("failed", { id, err: error });
+      update(id, { status: "error", error: friendlyErrorMessage(error) }, true);
     } finally {
       active.delete(id);
       running--;

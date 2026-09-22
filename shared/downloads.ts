@@ -11,6 +11,8 @@ type Common = {
   percent: number;
   sizeBytes: number;
   createdAt: number;
+  // What the download produced: video.mp4, or playlist.m3u8 when the segments were kept.
+  file?: string;
   finishedAt?: number;
   error?: string;
 };

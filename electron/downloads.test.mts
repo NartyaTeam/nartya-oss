@@ -185,3 +185,67 @@ test("refuses scan pages from a base that is not ours", async () => {
   assert.match(result.error ?? "", /non reconnue/);
   assert.equal(store.get("scan::a::b::1"), null);
 });
+
+function reviewManager(fetch: Fetch) {
+  const root = mkdtempSync(join(tmpdir(), "nartya-rev-"));
+  const store = createItemStore(join(root, "index.json"), 10_000);
+  const downloads = createDownloads({
+    store,
+    root: () => root,
+    fetch,
+    ffmpeg: () => Promise.resolve(null),
+    onChange: () => {},
+    resolveHandle: () => ({ url: "https://cdn.test/a.m3u8", provider: null }),
+    trustedScanBase: () => true,
+  });
+  return { store, downloads };
+}
+
+const hls = ["#EXTM3U", "#EXTINF:4,", "seg1.ts"].join("\n");
+
+test("records which file the download actually produced", async () => {
+  const fetch = ((url: string) =>
+    Promise.resolve({
+      url,
+      status: 200,
+      statusText: "OK",
+      headers: { "content-length": "9" },
+      stream: Readable.from([Buffer.from(url.endsWith(".m3u8") ? hls : "segbytes")]),
+    })) as unknown as Fetch;
+
+  const { store, downloads } = reviewManager(fetch);
+  store.set("a", { type: "episode", slug: "anime", status: "queued", percent: 0 });
+  downloads.enqueue({ id: "a", url: "https://cdn.test/a.m3u8", provider: null });
+  await new Promise((done) => setTimeout(done, 200));
+
+  assert.equal(store.get("a")?.status, "done");
+  // Without ffmpeg an hls download is a playlist, not a video.mp4. Playing it back means
+  // knowing that, or /local is asked for a file that does not exist.
+  assert.equal(store.get("a")?.file, "playlist.m3u8");
+});
+
+test("a removed entry is not brought back by a late progress tick", async () => {
+  let release: () => void = () => {};
+  const gate = new Promise<void>((done) => (release = done));
+  const fetch = ((url: string, options: { signal: AbortSignal }) =>
+    gate.then(() => {
+      if (options.signal.aborted) throw new DOMException("Aborted", "AbortError");
+      return {
+        url,
+        status: 200,
+        statusText: "OK",
+        headers: { "content-length": "8" },
+        stream: Readable.from([Buffer.from("segbytes")]),
+      };
+    })) as unknown as Fetch;
+
+  const { store, downloads } = reviewManager(fetch);
+  store.set("a", { type: "episode", slug: "anime", status: "queued", percent: 0 });
+  downloads.enqueue({ id: "a", url: "https://cdn.test/a.mp4", provider: null });
+
+  store.remove("a");
+  release();
+  await new Promise((done) => setTimeout(done, 300));
+
+  assert.equal(store.get("a"), null, "a record with no title breaks the offline library");
+});
