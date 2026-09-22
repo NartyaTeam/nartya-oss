@@ -1,5 +1,6 @@
-import { ArrowUpRight, Megaphone, Star } from "lucide-react";
+import { ArrowUpRight, Megaphone, Play, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "../../../ui/Button.tsx";
 import { browseGenreFor } from "../../catalog/genres.ts";
 import { broadcasterName, isFreeToWatch } from "../broadcasters.ts";
 import type { AnimeMeta, AnimePage, Broadcaster } from "../types.ts";
@@ -97,9 +98,14 @@ function MetaLine({ meta, status, airing }: MetaProps) {
   );
 }
 
-type HeaderProps = { page: AnimePage; seasonCover: string | null; seasonSynopsis: string | null };
+type HeaderProps = {
+  page: AnimePage;
+  seasonCover: string | null;
+  seasonSynopsis: string | null;
+  resume: { to: string; label: string } | null;
+};
 
-export function AnimeHeader({ page, seasonCover, seasonSynopsis }: HeaderProps) {
+export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: HeaderProps) {
   const { anime, meta, images } = page;
   const poster = seasonCover ?? images?.poster ?? anime.poster;
   const banner = images?.fanart ?? images?.banner;
@@ -128,11 +134,21 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis }: HeaderProps) 
       </div>
 
       <div className="relative z-10 -mt-44 flex flex-col gap-8 px-4 md:flex-row md:px-14">
-        <div className="w-44 shrink-0 self-start overflow-hidden rounded-lg shadow-card ring-1 ring-white/10 md:w-52">
-          {poster ? (
-            <img src={poster} alt={anime.title} className="aspect-[2/3] w-full object-cover" />
-          ) : (
-            <div className="aspect-[2/3] w-full bg-surface-2" />
+        <div className="w-44 shrink-0 self-start md:w-52">
+          <div className="overflow-hidden rounded-lg shadow-card ring-1 ring-white/10">
+            {poster ? (
+              <img src={poster} alt={anime.title} className="aspect-[2/3] w-full object-cover" />
+            ) : (
+              <div className="aspect-[2/3] w-full bg-surface-2" />
+            )}
+          </div>
+          {resume && (
+            <Link to={resume.to} className="mt-3 block">
+              <Button size="lg" className="w-full">
+                <Play size={18} className="shrink-0 fill-current" />
+                {resume.label}
+              </Button>
+            </Link>
           )}
         </div>
 

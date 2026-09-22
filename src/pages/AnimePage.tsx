@@ -7,6 +7,7 @@ import { AnimeHeader } from "../features/anime/ui/AnimeHeader.tsx";
 import { SeasonsSection } from "../features/anime/ui/SeasonsSection.tsx";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
 import type { Progress } from "../features/player/progress.ts";
+import { resumeLink, watchLink } from "../features/player/resume.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
@@ -53,6 +54,11 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
     data: await progress.watchedIn(slug, userId),
   }));
 
+  const last = useResource(store, `resume:${slug}:${userId}`, async () => ({
+    ok: true as const,
+    data: await progress.resumeFor(slug, userId),
+  }));
+
   const episodes = list.data?.episodes ?? [];
   const lang = pickLanguage(availableLanguages(episodes), params.get("lang") ?? DEFAULT_LANGUAGE);
 
@@ -84,6 +90,7 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
         page={card.data}
         seasonCover={list.data?.cover ?? null}
         seasonSynopsis={list.data?.description ?? null}
+        resume={resumeLink(slug, last.data ?? null, season?.id ?? null, lang)}
       />
       {season && (
         <SeasonsSection
@@ -97,9 +104,7 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
           onChoose={choose}
           onRetry={list.reload}
           watched={seen.data ?? {}}
-          watchUrl={(episode: Episode) =>
-            `/watch/${encodeURIComponent(slug)}?saison=${encodeURIComponent(season.id)}&ep=${String(episode.number)}&lang=${encodeURIComponent(lang)}`
-          }
+          watchUrl={(episode: Episode) => watchLink(slug, season.id, episode.number, lang)}
         />
       )}
     </div>
