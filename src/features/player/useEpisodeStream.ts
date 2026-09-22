@@ -49,8 +49,9 @@ export function useEpisodeStream(
   const slots = excluded.key === key ? excluded.slots : [];
   // The array is rebuilt on every render, so what identifies it is its contents.
   const disqualified = slots.join(",");
-  // A source dying mid episode must not restart it from the beginning.
-  const position = useRef(0);
+  // Carried across a source that dies mid episode, keyed so it is never carried across
+  // episodes: an effect resetting it would run after the one that reads it.
+  const position = useRef({ key, seconds: 0 });
   const failing = useRef(false);
 
   const latest = useRef({ sources, preferred, resumeAt });
@@ -59,7 +60,8 @@ export function useEpisodeStream(
   useEffect(() => {
     let live = true;
     failing.current = false;
-    const carried = position.current > 1 ? position.current : latest.current.resumeAt;
+    const held = position.current;
+    const carried = held.key === key && held.seconds > 1 ? held.seconds : latest.current.resumeAt;
     setState(idle(key, carried));
 
     const exclude = disqualified ? disqualified.split(",") : [];
@@ -81,11 +83,6 @@ export function useEpisodeStream(
     };
   }, [key, attempt, disqualified]);
 
-  // A new episode starts at its own position, not where the last one was left.
-  useEffect(() => {
-    position.current = 0;
-  }, [key]);
-
   const onFailed = useCallback(() => {
     const slot = state.slot;
     // One dead source raises a flurry of events; the first is the one that counts.
@@ -104,7 +101,7 @@ export function useEpisodeStream(
     error: state.key === key ? state.error : null,
     startAt: state.startAt,
     onTime: (seconds) => {
-      position.current = seconds;
+      position.current = { key, seconds };
     },
     onFailed,
     retry: () => {
