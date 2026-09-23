@@ -49,23 +49,24 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const watchKey = episodeKey(slug, season?.id ?? "", episode?.number ?? 0, lang);
   // Read fresh every time rather than through the resource cache: leaving an episode and
   // coming straight back would otherwise resume at the position from before the watch.
-  const [resumeAt, setResumeAt] = useState(0);
+  const [resume, setResume] = useState<{ key: string; seconds: number } | null>(null);
   useEffect(() => {
     let live = true;
-    setResumeAt(0);
     void progress.positionFor(userId, watchKey).then((seconds) => {
-      if (live) setResumeAt(seconds);
+      if (live) setResume({ key: watchKey, seconds });
     });
     return () => {
       live = false;
     };
   }, [progress, userId, watchKey]);
+  // Unknown until the saved position is back: a player started before it begins at zero.
+  const resumeAt = resume?.key === watchKey ? resume.seconds : null;
 
   const stream = useEpisodeStream(
     watchKey,
     episode?.sources[lang] ?? [],
     params.get("src") ?? AUTO_SOURCE,
-    resumeAt,
+    resumeAt ?? 0,
   );
 
   // What is saved rides on the report, not on the render: at cleanup the render already
@@ -128,7 +129,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
           {title}
         </Link>
 
-        {stream.playable ? (
+        {stream.playable && resumeAt !== null ? (
           <Player
             source={{ url: stream.playable.url, isHls: stream.playable.isHls, host: stream.host }}
             poster={episode.thumbnail ?? page.images?.poster ?? null}
@@ -154,7 +155,9 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
           />
         ) : (
           <div className="flex aspect-video w-full items-center justify-center bg-black text-sm text-muted">
-            {stream.loading ? "Recherche d'une source…" : (stream.error ?? "Lecture impossible")}
+            {stream.loading || stream.playable
+              ? "Recherche d'une source…"
+              : (stream.error ?? "Lecture impossible")}
           </div>
         )}
 

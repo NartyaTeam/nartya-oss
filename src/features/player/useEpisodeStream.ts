@@ -7,7 +7,7 @@ export type Stream = {
   host: string | null;
   loading: boolean;
   error: string | null;
-  /** Where to pick up, carried across a source that died mid episode. */
+  /** Where to pick up: the saved position, or where a source died mid episode. */
   startAt: number;
   onTime: (seconds: number) => void;
   onFailed: () => void;
@@ -21,17 +21,17 @@ type StreamState = {
   slot: string | null;
   loading: boolean;
   error: string | null;
-  startAt: number;
+  carried: number;
 };
 
-const idle = (key: string, startAt: number): StreamState => ({
+const idle = (key: string, carried: number): StreamState => ({
   key,
   playable: null,
   host: null,
   slot: null,
   loading: true,
   error: null,
-  startAt,
+  carried,
 });
 
 // Resolution is keyed on the episode being watched: a new one starts its own attempt, and
@@ -54,14 +54,14 @@ export function useEpisodeStream(
   const position = useRef({ key, seconds: 0 });
   const failing = useRef(false);
 
-  const latest = useRef({ sources, preferred, resumeAt });
-  latest.current = { sources, preferred, resumeAt };
+  const latest = useRef({ sources, preferred });
+  latest.current = { sources, preferred };
 
   useEffect(() => {
     let live = true;
     failing.current = false;
     const held = position.current;
-    const carried = held.key === key && held.seconds > 1 ? held.seconds : latest.current.resumeAt;
+    const carried = held.key === key && held.seconds > 1 ? held.seconds : 0;
     setState(idle(key, carried));
 
     const exclude = disqualified ? disqualified.split(",") : [];
@@ -79,7 +79,7 @@ export function useEpisodeStream(
         slot: won.ok ? won.source.slot : null,
         loading: false,
         error: won.ok ? null : won.error,
-        startAt: carried,
+        carried,
       });
     });
 
@@ -104,7 +104,7 @@ export function useEpisodeStream(
     host: state.host,
     loading: state.key === key ? state.loading : true,
     error: state.key === key ? state.error : null,
-    startAt: state.startAt,
+    startAt: state.key === key && state.carried > 0 ? state.carried : resumeAt,
     onTime: (seconds) => {
       position.current = { key, seconds };
     },
