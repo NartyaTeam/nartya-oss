@@ -14,6 +14,7 @@ export type Source = {
   hostMatch?: string;
   canonicalHost?: string;
   dropRefererOffHost?: boolean;
+  refererFromEmbed?: boolean;
   rejectPattern?: string;
   mediaPattern?: string;
   mediaBase?: string;
@@ -134,26 +135,22 @@ export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_
     return recipe?.defaultHeaders ?? {};
   }
 
-  // Without a recipe nothing can be claimed, and nothing is guessed: that was the point
-  // of taking the table out of the bundle.
+  // On the hostname, never on the whole url: a query string can name any domain it likes,
+  // and the host's headers, cookie included, would follow it there.
   function detectKey(url: string): string | null {
-    if (!url || !recipe) return null;
-    const lower = url.toLowerCase();
-    for (const [key, source] of Object.entries(recipe.sources)) {
-      if (source.domains?.some((domain) => lower.includes(domain))) return key;
+    if (!recipe) return null;
+    let host: string;
+    try {
+      host = new URL(url).hostname.toLowerCase();
+    } catch {
+      return null;
     }
-    return null;
-  }
-
-  function isAllowedEmbedHost(hostname: string): boolean {
-    if (!recipe) return false;
-    const host = hostname.toLowerCase();
-    for (const source of Object.values(recipe.sources)) {
-      for (const domain of source.domains ?? []) {
-        if (host === domain || host.endsWith(`.${domain}`)) return true;
+    for (const [key, source] of Object.entries(recipe.sources)) {
+      if (source.domains?.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+        return key;
       }
     }
-    return false;
+    return null;
   }
 
   function set(next: Recipe): void {
@@ -162,7 +159,7 @@ export function createRecipeStore(load: Load = fetchRecipe, ttlMs: number = TTL_
     loadedFrom = identify(credentials);
   }
 
-  return { ensure, get, getSource, defaultHeaders, detectKey, isAllowedEmbedHost, set };
+  return { ensure, get, getSource, defaultHeaders, detectKey, set };
 }
 
 export type RecipeStore = ReturnType<typeof createRecipeStore>;

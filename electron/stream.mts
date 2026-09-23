@@ -29,6 +29,16 @@ export function readEmbed(body: unknown): Embed | null {
   return { url, provider: typeof provider === "string" && provider ? provider : null };
 }
 
+// Only a host the recipe knows is ever fetched, and only as the source it was sealed for.
+export function trustedEmbed(
+  embed: Embed,
+  detectKey: (url: string) => string | null,
+): Embed | null {
+  const key = detectKey(embed.url);
+  if (!key || (embed.provider !== null && embed.provider !== key)) return null;
+  return { url: embed.url, provider: key };
+}
+
 async function readBody(stream: NodeJS.ReadableStream): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -60,16 +70,23 @@ export function createStreams(session: () => Session) {
 
     const embed = readEmbed(await response.json());
     if (!embed) throw new StreamError("Source introuvable");
-    return embed;
+    const trusted = trustedEmbed(embed, (url) => sourceRecipe.detectKey(url));
+    if (!trusted) throw new StreamError("Source non reconnue");
+    return trusted;
   }
 
   async function readPage(url: string, provider: string | null): Promise<string> {
     const response = await fetchFromProvider(url, {
       provider,
+      referer: sourceRecipe.getSource(provider)?.refererFromEmbed ? url : undefined,
       signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
+    }).catch((error: unknown) => {
+      log.warn("embed unreachable", { provider, err: error });
+      throw error;
     });
     if (response.status >= 400) {
       response.stream.destroy();
+      log.warn("host refused the embed", { provider, status: response.status });
       throw new Error(`host answered ${String(response.status)}`);
     }
     return readBody(response.stream);
@@ -87,7 +104,9 @@ export function createStreams(session: () => Session) {
   return {
     resolve: async (token: string, forceRefresh: boolean) => {
       const outcome = await resolver.resolve(token, forceRefresh);
-      if (!outcome.ok) log.warn("resolve failed", { reason: outcome.error });
+      if (!outcome.ok) {
+        log.warn("resolve failed", { reason: outcome.error, provider: outcome.provider });
+      }
       return outcome;
     },
   };

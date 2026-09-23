@@ -14,7 +14,9 @@ export type Mint = (target: {
 }) => string | null;
 
 export type Resolved = { handle: string; isHls: boolean };
-export type Outcome = { ok: true; value: Resolved } | { ok: false; error: string };
+// A failure past the unsealing names the source, which is what makes a log line useful.
+export type Outcome =
+  { ok: true; value: Resolved } | { ok: false; error: string; provider?: string | null };
 
 export type ResolveParts = {
   unseal: Unseal;
@@ -68,22 +70,23 @@ export function createResolver(parts: ResolveParts) {
         error: error instanceof StreamError ? error.message : "Source injoignable",
       };
     }
-    if (!embed.url) return { ok: false, error: "Source introuvable" };
+    const failed = (error: string): Outcome => ({ ok: false, error, provider: embed.provider });
+    if (!embed.url) return failed("Source introuvable");
 
     let html: string;
     try {
       html = await parts.readPage(embed.url, embed.provider);
     } catch {
-      return { ok: false, error: "Hébergeur injoignable" };
+      return failed("Hébergeur injoignable");
     }
 
     const extracted = parts.extract(html, embed.url, embed.provider);
-    if (!extracted.ok) return { ok: false, error: extracted.error };
+    if (!extracted.ok) return failed(extracted.error);
 
     // A host marked exclusive serving someone else's embed means a bad match or a stale
     // cache, never a stream worth playing.
     if (!parts.consistent(embed.url, extracted.url)) {
-      return { ok: false, error: "Flux extrait incohérent avec la source" };
+      return failed("Flux extrait incohérent avec la source");
     }
 
     const handle = parts.mint({
@@ -93,7 +96,7 @@ export function createResolver(parts: ResolveParts) {
       referer: embed.url,
       origin: new URL(embed.url).origin,
     });
-    if (!handle) return { ok: false, error: "Flux non enregistrable" };
+    if (!handle) return failed("Flux non enregistrable");
 
     const value = { handle, isHls: isHlsUrl(extracted.url) };
     remember(token, value);

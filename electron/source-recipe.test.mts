@@ -77,15 +77,15 @@ test("detects a source by domain and answers null without a recipe", () => {
   assert.equal(store.detectKey("https://elsewhere.test/x"), null);
 });
 
-test("allows embed hosts and their subdomains only", () => {
+test("recognises a host and its subdomains on the hostname alone", () => {
   const store = createRecipeStore(counting());
-  assert.equal(store.isAllowedEmbedHost("one.test"), false);
-
   store.set(recipe);
-  assert.equal(store.isAllowedEmbedHost("one.test"), true);
-  assert.equal(store.isAllowedEmbedHost("play.one.test"), true);
-  assert.equal(store.isAllowedEmbedHost("notone.test"), false);
-  assert.equal(store.isAllowedEmbedHost("one.test.evil.example"), false);
+  assert.equal(store.detectKey("https://play.one.test/e/1"), "s1");
+  assert.equal(store.detectKey("https://notone.test/e/1"), null);
+  assert.equal(store.detectKey("https://one.test.evil.example/e/1"), null);
+  assert.equal(store.detectKey("https://evil.example/?next=one.test"), null);
+  assert.equal(store.detectKey("https://evil.example/one.test/e/1"), null);
+  assert.equal(store.detectKey("not a url"), null);
 });
 
 test("exposes sources and default headers", () => {

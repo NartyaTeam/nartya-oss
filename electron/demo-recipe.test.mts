@@ -26,11 +26,10 @@ test("is what a store without an api base ends up with", async () => {
   assert.equal(loaded?.version, 0);
 });
 
-test("recognises the demo hosts as allowed", () => {
+test("recognises the demo hosts, and nothing else", () => {
   const store = createRecipeStore(fetchRecipe);
   store.set(demoRecipe());
-  const host = new URL(DEMO_STREAMS[0]?.url ?? "").hostname;
 
-  assert.equal(store.isAllowedEmbedHost(host), true);
-  assert.equal(store.isAllowedEmbedHost("elsewhere.test"), false);
+  assert.equal(store.detectKey(DEMO_STREAMS[0]?.url ?? ""), DEMO_SOURCE_KEY);
+  assert.equal(store.detectKey("https://elsewhere.test/a.mp4"), null);
 });

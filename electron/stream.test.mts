@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readEmbed, refusalOf } from "./stream.mts";
+import { readEmbed, refusalOf, trustedEmbed } from "./stream.mts";
 
 test("each refusal the api spells in a number says what to do about it", () => {
   assert.equal(refusalOf(401), "Connecte-toi pour lancer la lecture.");
@@ -32,4 +32,25 @@ test("an answer with no url is not an embed", () => {
   assert.equal(readEmbed({ data: { url: "" } }), null);
   assert.equal(readEmbed({}), null);
   assert.equal(readEmbed(null), null);
+});
+
+const known = (url: string): string | null => (new URL(url).hostname === "host.test" ? "s1" : null);
+
+test("an embed on a host the recipe knows is trusted, under the key of that host", () => {
+  assert.deepEqual(trustedEmbed({ url: "https://host.test/e", provider: "s1" }, known), {
+    url: "https://host.test/e",
+    provider: "s1",
+  });
+  assert.deepEqual(trustedEmbed({ url: "https://host.test/e", provider: null }, known), {
+    url: "https://host.test/e",
+    provider: "s1",
+  });
+});
+
+test("an embed on a host the recipe does not know is never fetched", () => {
+  assert.equal(trustedEmbed({ url: "https://elsewhere.test/e", provider: "s1" }, known), null);
+});
+
+test("an embed sealed for one source but living on another is refused", () => {
+  assert.equal(trustedEmbed({ url: "https://host.test/e", provider: "s2" }, known), null);
 });

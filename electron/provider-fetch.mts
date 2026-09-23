@@ -20,6 +20,8 @@ export type Validate = (url: string) => Promise<Check>;
 export type FetchOptions = {
   provider?: string | null;
   rangeHeader?: string;
+  // Sent as Referer, with its origin as Origin, over what the recipe says.
+  referer?: string;
   signal?: AbortSignal;
 };
 
@@ -187,11 +189,14 @@ export async function fetchUrl(url: string, options: UrlOptions): Promise<Provid
 
 export function fetchFromProvider(
   targetUrl: string,
-  { provider, rangeHeader, signal }: FetchOptions = {},
+  { provider, rangeHeader, referer, signal }: FetchOptions = {},
 ): Promise<ProviderResponse> {
   const request = buildProviderRequest(targetUrl, provider, rangeHeader);
+  const headers = referer
+    ? { ...request.headers, Referer: referer, Origin: new URL(referer).origin }
+    : request.headers;
   return fetchUrl(request.url, {
-    headers: request.headers,
+    headers,
     timeoutMs: request.timeoutMs,
     signal,
   });

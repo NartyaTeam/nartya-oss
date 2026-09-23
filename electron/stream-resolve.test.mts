@@ -98,11 +98,12 @@ test("the api's own words reach the viewer, anything else stays vague", async ()
   assert.deepEqual(await broke.resolve("token"), { ok: false, error: "Source injoignable" });
 });
 
-test("a host serving someone else's embed is not a stream", async () => {
+test("a host serving someone else's embed is not a stream, and says which source it was", async () => {
   const resolver = createResolver(parts({ consistent: () => false }));
   assert.deepEqual(await resolver.resolve("token"), {
     ok: false,
     error: "Flux extrait incohérent avec la source",
+    provider: "s1",
   });
 });
 
