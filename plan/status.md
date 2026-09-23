@@ -1,0 +1,52 @@
+# Status
+
+Where the rewrite stands, updated at the end of each working session. The phases themselves
+are in [migration.md](migration.md), the reasons in [journal.md](journal.md).
+
+Last updated: 2026-09-23.
+
+## Done
+
+- **Phases 1 and 2**, and the phase 0 audits. Guard rails, CI on three systems, gitleaks,
+  `check-style`, metrics, config, Supabase client, session store, platform contract.
+- **Phase 3, main process**, except the three items under Next: url safety, byte ranges, friendly
+  errors, api base, OAuth loopback, DoH, logger, source recipe, video extraction, provider
+  fetch (gzip, deflate and brotli since 2026-09-23), local proxy, demo recipe, downloads,
+  cast with its fake receiver.
+- **Phase 4, slices 1 to 3.** Sign in and session, home, search and genres, anime page with
+  seasons, languages and the source picker.
+- **Phase 4, slice 4 in part.** HLS and mp4 playback through ArtPlayer and hls.js, several
+  sources tried at once, resume, next episode, the quality menu (kept from one episode to
+  the next), `npm run electron:dev` for hot reload.
+- **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
+  anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
+  recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
+
+## Next
+
+1. **Slice 4, the rest:** subtitles, then Anime4K. That closes the slice and is the writing
+   switch (D15).
+2. **Phase 3 leftovers:** deep link, auto update, Discord RPC. None of them blocks the switch.
+3. Slices 5 to 8.
+
+## Development setup
+
+The app, the api (`nartya-api-v2`) and a local Supabase run together, and development never
+touches production data:
+
+- `nartya-api-v2`: `npm run dev`, port 3010.
+- Local Supabase, built from the production schema in a private repository until phase 5
+  publishes it: `supabase start`, test account `test@nartya.local` / `nartya-local`.
+- Here: `.env` points at both, production values kept commented; `npm run electron:dev`.
+
+## Open, for a dedicated session
+
+Security work is kept out of feature sessions on purpose.
+
+- Twenty `SECURITY DEFINER` functions in production are owned by `supabase_admin`, a
+  superuser, instead of `postgres`. Not exploitable as things stand; to fix with a
+  migration tested locally first.
+- Audit query 4 in [supabase.md](supabase.md) allows two functions, where production grants
+  `anon` 79. The allow list needs review before the query goes into CI.
+- The six "readable by all" policies on catalog tables are neutralised by revoked grants.
+  Phase 5 drops them, as planned.

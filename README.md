@@ -2,8 +2,9 @@
 
 Desktop app for watching anime, built with Electron, React and Supabase.
 
-**Status: migration in progress. This repository does not run as an app yet.** The first
-working slice is the skeleton and the tooling; features land one at a time.
+**Status: migration in progress.** The app signs in, browses the catalog and plays episodes;
+subtitles, Anime4K and everything after the player are still to come. Details in
+[plan/status.md](plan/status.md).
 
 ## What this repository is
 

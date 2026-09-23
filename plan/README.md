@@ -4,6 +4,7 @@ How this repository is being built, and why. Written as the work goes, not after
 
 | File                             | Contents                                                                               |
 | -------------------------------- | -------------------------------------------------------------------------------------- |
+| [status.md](status.md)           | Where the work stands, what comes next, what is left open                              |
 | [decisions.md](decisions.md)     | D1 to D15: language, stack, scope, licence, AI attribution, long term goal             |
 | [audit.md](audit.md)             | The previous codebase, measured                                                        |
 | [migration.md](migration.md)     | Phases, from commit 1 to the switch                                                    |
