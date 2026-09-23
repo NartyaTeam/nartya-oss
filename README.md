@@ -26,7 +26,9 @@ npm install
 npm run dev
 ```
 
-`npm run electron` builds the main process and opens the desktop shell. Copy `.env.example`
+`npm run electron` builds the main process and opens the desktop shell on the built front end
+in `dist/`, so run `npm run build:web` first. `npm run electron:dev` opens it on the Vite dev
+server instead, with hot reload. Copy `.env.example`
 to `.env` first; both Supabase values are public by design. Playback needs `VITE_API_BASE`:
 the main process resolves streams itself and reads that same `.env` when the build carries no
 address, or `NARTYA_API_BASE` when it is set.
