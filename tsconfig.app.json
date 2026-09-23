@@ -6,7 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "@webgpu/types"],
     "noEmit": true,
     "baseUrl": ".",
     "paths": {

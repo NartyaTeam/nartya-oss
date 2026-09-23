@@ -3,9 +3,14 @@ import type Hls from "hls.js";
 import type { Store } from "./bandwidth.ts";
 import {
   levelForHeight,
+  lockOptions,
+  lockedLevel,
   qualityOptions,
+  saveLock,
   saveQuality,
+  savedLock,
   savedQuality,
+  type Lock,
   type Quality,
 } from "./quality.ts";
 
@@ -22,12 +27,28 @@ export function capQuality(hls: Hls, quality: Quality): void {
   hls.loadLevel = -1;
 }
 
-export function addQualityMenu(art: Artplayer, hls: Hls, store: Store): void {
-  const options = qualityOptions(hls.levels, savedQuality(store));
+export function lockQuality(hls: Hls, lock: Lock): void {
+  const level = lockedLevel(hls.levels, lock);
+  hls.capLevelToPlayerSize = false;
+  hls.autoLevelCapping = level;
+  hls.loadLevel = level;
+  // Switches at the next fragment instead of playing out a buffer of the lower variant.
+  if (hls.currentLevel !== level) hls.nextLevel = level;
+}
+
+export function applyQuality(hls: Hls, store: Store, locked: boolean): void {
+  if (locked) lockQuality(hls, savedLock(store));
+  else capQuality(hls, savedQuality(store));
+}
+
+export function showQualityMenu(art: Artplayer, hls: Hls, store: Store, locked: boolean): void {
+  const options = locked
+    ? lockOptions(hls.levels, savedLock(store))
+    : qualityOptions(hls.levels, savedQuality(store));
   if (options.length === 0) return;
   const byLabel = new Map(options.map((option) => [option.label, option.quality]));
 
-  art.setting.add({
+  art.setting.update({
     name: "quality",
     width: 200,
     html: "Qualité",
@@ -38,8 +59,9 @@ export function addQualityMenu(art: Artplayer, hls: Hls, store: Store): void {
     onSelect: (item) => {
       const quality = byLabel.get(item.html);
       if (quality === undefined) return;
-      saveQuality(store, quality);
-      capQuality(hls, quality);
+      if (locked && quality !== "auto") saveLock(store, quality);
+      else saveQuality(store, quality);
+      applyQuality(hls, store, locked);
       return item.html;
     },
   });

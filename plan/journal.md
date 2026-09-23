@@ -47,3 +47,9 @@ One line per decision taken while rewriting. Longer reasoning goes in
   keeps the position, since progress is saved per language and the new one would start at
   zero, and it keeps the picked source, a host key being the same across languages. The
   host picker stays on the anime page, out of the player.
+- 2026-09-23 - `anime4k-webgpu` is accepted although its only version dates from June 2024,
+  on the same terms as `castv2-client`: pinned, and imported by one file,
+  `src/features/player/anime4k.ts`, which loads it on first use since it weighs 3.4 MB. It
+  carries bloc97's networks as compute shaders; rewriting them is not worth it. The first
+  activation warning no longer diagnoses the GPU: that took an IPC call and a list of GPU
+  models to keep up to date, for an estimate. It states a recommended minimum instead.

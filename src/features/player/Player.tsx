@@ -1,11 +1,14 @@
 import Artplayer from "artplayer";
 import Hls from "hls.js";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { addAnime4kMenu, type Anime4kMenu } from "./anime4k-menu.ts";
+import type { Anime4kMode } from "./anime4k-modes.ts";
+import { Anime4kWarning } from "./Anime4kWarning.tsx";
 import { remember, browserStore } from "./bandwidth.ts";
 import { hlsConfigFor } from "./hls-config.ts";
 import { addLanguageMenu } from "./language-menu.ts";
-import { addQualityMenu, capQuality } from "./quality-menu.ts";
-import { savedQuality } from "./quality.ts";
+import { applyQuality, showQualityMenu } from "./quality-menu.ts";
+import { hasWebGpu } from "./webgpu.ts";
 
 // Arrow keys seek ten seconds, but artplayer's own step would walk into the very end of
 // the episode and fire ended, which chains to the next one on a key repeat.
@@ -48,6 +51,8 @@ export function Player({
   // Read inside the player's own callbacks, which outlive the render that created them.
   const latest = useRef({ startAt, onLanguage, onTime, onEnded, onError });
   latest.current = { startAt, onLanguage, onTime, onEnded, onError };
+  const upscaler = useRef<Anime4kMenu | null>(null);
+  const [asking, setAsking] = useState<Anime4kMode | null>(null);
 
   useEffect(() => {
     const container = box.current;
@@ -75,7 +80,16 @@ export function Player({
       latest.current.onLanguage(lang),
     );
 
+    const store = browserStore();
     let hls: Hls | null = null;
+    const requality = (): void => {
+      if (!hls || hls.levels.length === 0) return;
+      const locked = upscale?.active() ?? false;
+      applyQuality(hls, store, locked);
+      showQualityMenu(art, hls, store, locked);
+    };
+    const upscale = hasWebGpu() ? addAnime4kMenu(art, store, setAsking, requality) : null;
+    upscaler.current = upscale;
 
     const seekBy = (seconds: number): void => {
       const { currentTime, duration } = art.video;
@@ -120,11 +134,7 @@ export function Player({
       hls.attachMedia(art.video);
 
       const attached = hls;
-      attached.on(Hls.Events.MANIFEST_PARSED, () => {
-        const store = browserStore();
-        capQuality(attached, savedQuality(store));
-        addQualityMenu(art, attached, store);
-      });
+      attached.on(Hls.Events.MANIFEST_PARSED, requality);
 
       // Only a fatal error is the source giving up; hls.js recovers from the rest itself.
       attached.on(Hls.Events.ERROR, (_event, data) => {
@@ -134,12 +144,13 @@ export function Player({
       // The rolling estimate, not one fragment's: it is what seeds the next launch.
       attached.on(Hls.Events.FRAG_LOADED, () => {
         const measured = attached.bandwidthEstimate;
-        if (Number.isFinite(measured)) remember(browserStore(), measured, host);
+        if (Number.isFinite(measured)) remember(store, measured, host);
       });
     }
 
     return () => {
       window.removeEventListener("keydown", onKey);
+      upscale?.stop();
       hls?.destroy();
       art.destroy(false);
     };
@@ -147,9 +158,24 @@ export function Player({
 
   // Artplayer offers no way to turn its hover hints off outside mobile.
   return (
-    <div
-      ref={box}
-      className="aspect-video w-full bg-black [&_[class*=hint--]]:before:!hidden [&_[class*=hint--]]:after:!hidden"
-    />
+    <>
+      <div
+        ref={box}
+        className="aspect-video w-full bg-black [&_[class*=hint--]]:before:!hidden [&_[class*=hint--]]:after:!hidden"
+      />
+      {asking && (
+        <Anime4kWarning
+          mode={asking}
+          onConfirm={() => {
+            upscaler.current?.enable(asking);
+            setAsking(null);
+          }}
+          onCancel={() => {
+            upscaler.current?.refresh();
+            setAsking(null);
+          }}
+        />
+      )}
+    </>
   );
 }

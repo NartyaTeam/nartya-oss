@@ -15,19 +15,22 @@ Last updated: 2026-09-23.
   cast with its fake receiver.
 - **Phase 4, slices 1 to 3.** Sign in and session, home, search and genres, anime page with
   seasons, languages and the source picker.
-- **Phase 4, slice 4 in part.** HLS and mp4 playback through ArtPlayer and hls.js, several
+- **Phase 4, slice 4.** HLS and mp4 playback through ArtPlayer and hls.js, several
   sources tried at once, resume, next episode, the quality menu (kept from one episode to
-  the next), a language menu that keeps the position, `npm run electron:dev` for hot reload.
+  the next), a language menu that keeps the position, Anime4K over WebGPU with its own fixed
+  quality, `npm run electron:dev` for hot reload.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
 
 ## Next
 
-1. **Slice 4, the rest:** Anime4K. That closes the slice and is the writing switch (D15).
-   No subtitles: the sources burn them in.
+1. **The writing switch (D15).** Slice 4 is closed; what is left is the list of criteria in
+   [publication.md](publication.md).
 2. **Phase 3 leftovers:** deep link, auto update, Discord RPC. None of them blocks the switch.
 3. Slices 5 to 8.
+4. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
+   on Linux drivers Chromium blocklists, which the previous app forced on.
 
 ## Development setup
 

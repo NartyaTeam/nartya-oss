@@ -57,3 +57,35 @@ export function saveQuality(store: Store, quality: Quality): void {
     // Quota or a private window: the choice still holds for the episode being watched.
   }
 }
+
+export type Lock = "max" | number;
+const LOCK_KEY = "nartya:anime4k-quality";
+
+// Under Anime4K a quality is a fixed level, not a ceiling: upscaling whatever adaptive
+// bitrate happened to pick would spend the GPU on a 480p.
+export function lockedLevel(levels: readonly Level[], lock: Lock): number {
+  return levelForHeight(levels, lock === "max" ? Number.POSITIVE_INFINITY : lock);
+}
+
+export function lockOptions(levels: readonly Level[], lock: Lock): QualityOption[] {
+  const height = levels[lockedLevel(levels, lock)]?.height ?? "auto";
+  return qualityOptions(levels, height).filter((option) => option.quality !== "auto");
+}
+
+export function savedLock(store: Store): Lock {
+  try {
+    const height = Number.parseInt(store.get(LOCK_KEY) ?? "", 10);
+    return Number.isInteger(height) && height > 0 ? height : "max";
+  } catch {
+    // Storage the viewer blocked: the best level, which is what Anime4K is for.
+    return "max";
+  }
+}
+
+export function saveLock(store: Store, lock: Lock): void {
+  try {
+    store.set(LOCK_KEY, String(lock));
+  } catch {
+    // Quota or a private window: the choice still holds for the episode being watched.
+  }
+}

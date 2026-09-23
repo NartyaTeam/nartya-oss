@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Store } from "./bandwidth.ts";
-import { levelForHeight, qualityOptions, saveQuality, savedQuality } from "./quality.ts";
+import {
+  levelForHeight,
+  lockOptions,
+  lockedLevel,
+  qualityOptions,
+  saveLock,
+  saveQuality,
+  savedLock,
+  savedQuality,
+} from "./quality.ts";
 
 const levels = [
   { height: 360, bitrate: 500_000 },
@@ -101,4 +110,33 @@ test("storage the viewer blocked neither throws nor loses the default", () => {
   assert.doesNotThrow(() => {
     saveQuality(blocked, 720);
   });
+});
+
+test("a lock on max takes the best variant of the highest height", () => {
+  assert.equal(lockedLevel(levels, "max"), 3);
+});
+
+test("a lock on a height takes the best variant at or below it", () => {
+  assert.equal(lockedLevel(levels, 720), 2);
+  assert.equal(lockedLevel(levels, 240), 0);
+});
+
+test("a locked menu has no auto, and ticks the locked height", () => {
+  const options = lockOptions(levels, "max");
+  assert.deepEqual(
+    options.map((option) => option.label),
+    ["1080p", "720p", "360p"],
+  );
+  assert.equal(options.find((option) => option.selected)?.quality, 1080);
+  assert.equal(lockOptions(levels, 720).find((option) => option.selected)?.quality, 720);
+});
+
+test("the lock is kept apart from the normal quality, and defaults to max", () => {
+  const store = memory();
+  assert.equal(savedLock(store), "max");
+  saveQuality(store, 480);
+  assert.equal(savedLock(store), "max");
+  saveLock(store, 720);
+  assert.equal(savedLock(store), 720);
+  assert.equal(savedQuality(store), 480);
 });
