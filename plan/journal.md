@@ -53,3 +53,6 @@ One line per decision taken while rewriting. Longer reasoning goes in
   carries bloc97's networks as compute shaders; rewriting them is not worth it. The first
   activation warning no longer diagnoses the GPU: that took an IPC call and a list of GPU
   models to keep up to date, for an estimate. It states a recommended minimum instead.
+- 2026-09-23 - Writing switch (D15). The app signs in, browses, opens an anime and plays it,
+  checked end to end against the api and a local Supabase. From now on new code is written
+  here only; the private app, frozen since 2026-09-21, takes urgent fixes and nothing else.

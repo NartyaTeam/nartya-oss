@@ -38,7 +38,8 @@ delete.
 
 ## Switch criteria (D15)
 
-- [ ] The public app runs end to end: auth, catalog, anime page, player
+- [x] The public app runs end to end: auth, catalog, anime page, player (writing switch,
+      2026-09-23)
 - [ ] An outside contributor can run it from the README alone: `supabase start`,
       `npm run dev`, a demo video plays
 - [ ] No file over 300 lines without a reason; metrics published in the README

@@ -25,11 +25,14 @@ Last updated: 2026-09-23.
 
 ## Next
 
-1. **The writing switch (D15).** Slice 4 is closed; what is left is the list of criteria in
-   [publication.md](publication.md).
-2. **Phase 3 leftovers:** deep link, auto update, Discord RPC. None of them blocks the switch.
-3. Slices 5 to 8.
-4. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
+The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
+leads to the production switch, whose criteria are in [publication.md](publication.md).
+
+1. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
+2. Slices 5 to 7: downloads, profile and lists, settings and legal pages.
+3. Contributor setup: the schema published (phase 5), demo catalog data (D12).
+4. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
+5. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
    on Linux drivers Chromium blocklists, which the previous app forced on.
 
 ## Development setup
