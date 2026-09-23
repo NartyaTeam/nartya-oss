@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { availableLanguages, episodesIn, searchEpisodes, sourcesFor } from "./season.ts";
+import { availableLanguages, choiceOf, episodesIn, searchEpisodes, sourcesFor } from "./season.ts";
 import type { Episode, Source } from "./types.ts";
 
 const source = (slot: string, rank: number): Source => ({
@@ -85,4 +85,20 @@ test("a title is searched loosely, and case does not matter", () => {
 test("an empty search is not a search", () => {
   const season = [episode(1, {}), episode(2, {})];
   assert.equal(searchEpisodes(season, "   ").length, 2);
+});
+
+test("the picker lists each host once, whichever slot it sits under", () => {
+  const onHost = (slot: string, key: string, rank: number): Source => ({
+    ...source(slot, rank),
+    key,
+  });
+  const season = [
+    episode(1, { vostfr: [onHost("eps2", "s1", 1), onHost("eps1", "s5", 2)] }),
+    episode(2, { vostfr: [onHost("eps1", "s1", 1), onHost("eps3", "s1", 1)] }),
+  ];
+  assert.deepEqual(sourcesFor(season, "vostfr").map(choiceOf), ["s1", "s5"]);
+});
+
+test("a source with no host key is still chosen by its slot", () => {
+  assert.equal(choiceOf({ ...source("eps4", 1), key: "" }), "eps4");
 });

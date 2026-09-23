@@ -8,16 +8,24 @@ export function availableLanguages(episodes: Episode[]): string[] {
   return [...seen];
 }
 
+// What a viewer picks is a host: the same "Source A" in every language and season, where
+// the api's slot names only a column of one season's page.
+export function choiceOf(source: Source): string {
+  return source.key || source.slot;
+}
+
 // A season's players are not the same on every episode: a host added halfway through the
 // run would be missing from a list read off the first one.
 export function sourcesFor(episodes: Episode[], lang: string): Source[] {
-  const bySlot = new Map<string, Source>();
+  const byChoice = new Map<string, Source>();
   for (const episode of episodes) {
     for (const source of episode.sources[lang] ?? []) {
-      if (!bySlot.has(source.slot)) bySlot.set(source.slot, source);
+      const choice = choiceOf(source);
+      const held = byChoice.get(choice);
+      if (!held || source.rank < held.rank) byChoice.set(choice, source);
     }
   }
-  return [...bySlot.values()].sort((a, b) => a.rank - b.rank);
+  return [...byChoice.values()].sort((a, b) => a.rank - b.rank);
 }
 
 export function episodesIn(episodes: Episode[], lang: string): Episode[] {

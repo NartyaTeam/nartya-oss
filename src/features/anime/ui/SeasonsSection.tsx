@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { availableLanguages, episodesIn, searchEpisodes, sourcesFor } from "../season.ts";
+import { availableLanguages, choiceOf, episodesIn, searchEpisodes, sourcesFor } from "../season.ts";
 import type { Watched } from "../../player/progress.ts";
 import type { AnimePage, Episode } from "../types.ts";
 import { Empty } from "../../../ui/Empty.tsx";
@@ -30,7 +30,7 @@ export function SeasonsSection(props: SeasonsProps) {
 
   const languages = availableLanguages(episodes);
   const sources = sourcesFor(episodes, lang);
-  const known = sources.some((entry) => entry.slot === props.source);
+  const known = sources.some((entry) => choiceOf(entry) === props.source);
 
   const found = searchEpisodes(episodesIn(episodes, lang), search);
   const shown = reversed ? [...found].reverse() : found;

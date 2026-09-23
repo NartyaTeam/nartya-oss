@@ -53,6 +53,35 @@ test("a chosen source that failed hands back to the automatic order", () => {
   );
 });
 
+const onHost = (slot: string, key: string, rank: number): Source => ({
+  ...source(slot, rank),
+  key,
+});
+
+test("a picked source is a host, found under whichever slot carries it", () => {
+  const episode = [onHost("eps1", "s5", 1), onHost("eps2", "s1", 2), onHost("eps3", "s6", 3)];
+  assert.deepEqual(
+    orderSources(episode, "s1").map((entry) => entry.slot),
+    ["eps2"],
+  );
+});
+
+test("a host under two slots is tried under both before giving up on it", () => {
+  const episode = [onHost("eps1", "s1", 1), onHost("eps2", "s1", 2), onHost("eps3", "s5", 3)];
+  assert.deepEqual(
+    orderSources(episode, "s1").map((entry) => entry.slot),
+    ["eps1", "eps2"],
+  );
+  assert.deepEqual(
+    orderSources(episode, "s1", ["eps1"]).map((entry) => entry.slot),
+    ["eps2"],
+  );
+  assert.deepEqual(
+    orderSources(episode, "s1", ["eps1", "eps2"]).map((entry) => entry.slot),
+    ["eps3"],
+  );
+});
+
 test("the first to produce something playable wins", async () => {
   const { delay, tick } = manualDelay();
   const won = resolveHedged(

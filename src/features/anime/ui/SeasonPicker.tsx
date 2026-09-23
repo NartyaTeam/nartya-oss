@@ -1,6 +1,7 @@
 import { ArrowDownUp, Search, X } from "lucide-react";
 import { Select } from "../../../ui/Select.tsx";
 import { languageLabel } from "../languages.ts";
+import { choiceOf } from "../season.ts";
 import type { Season, Source } from "../types.ts";
 
 export const AUTO_SOURCE = "auto";
@@ -55,7 +56,7 @@ export function SeasonPicker(props: PickerProps) {
           options={[
             { value: AUTO_SOURCE, label: "Source automatique" },
             ...sources.map((source) => ({
-              value: source.slot,
+              value: choiceOf(source),
               label: source.recommended ? `${source.label} (recommandée)` : source.label,
             })),
           ]}

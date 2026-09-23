@@ -1,3 +1,4 @@
+import { choiceOf } from "../anime/season.ts";
 import type { Source } from "../anime/types.ts";
 
 export const AUTO = "auto";
@@ -15,11 +16,11 @@ export function orderSources(
   if (out.length === 0) return [];
 
   if (preferred !== AUTO) {
-    const chosen = out.find((source) => source.slot === preferred);
-    if (chosen) return [chosen];
-    // Picked by hand and now disqualified: fall back to the automatic order. Picked and
-    // simply unknown: there is nothing the viewer asked for to play.
-    if (!excluded.includes(preferred)) return [];
+    const chosen = out.filter((source) => choiceOf(source) === preferred);
+    if (chosen.length > 0) return chosen;
+    // Picked by hand and every slot of it now disqualified: fall back to the automatic
+    // order. Picked and simply unknown: there is nothing the viewer asked for to play.
+    if (!sources.some((source) => choiceOf(source) === preferred)) return [];
   }
   return out;
 }
