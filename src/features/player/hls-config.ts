@@ -1,5 +1,5 @@
 import type { HlsConfig } from "hls.js";
-import { browserBandwidth, estimateFor } from "./bandwidth.ts";
+import { browserStore, estimateFor } from "./bandwidth.ts";
 
 // Generous buffers: the local proxy adds a hop, and a stall costs more than memory does.
 const BASE: Partial<HlsConfig> = {
@@ -40,5 +40,5 @@ const BASE: Partial<HlsConfig> = {
 };
 
 export function hlsConfigFor(host: string | null): Partial<HlsConfig> {
-  return { ...BASE, abrEwmaDefaultEstimate: estimateFor(browserBandwidth(), host) };
+  return { ...BASE, abrEwmaDefaultEstimate: estimateFor(browserStore(), host) };
 }

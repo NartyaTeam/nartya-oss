@@ -31,3 +31,9 @@ One line per decision taken while rewriting. Longer reasoning goes in
   `protobufjs` is forced to 7.x through `overrides`, which removes the eleven advisories the
   6.x line carries; the library still encodes and decodes on 7.6.6, verified against the fake
   receiver. `dns-packet` and `multicast-dns` are current and need no such care.
+- 2026-09-23 - Preferred audio track selection is not ported. `findPreferredAudioIndex` came
+  from the films app: no anime page passed it a track and the api never produced one, since
+  VF and VOSTFR are separate sources rather than tracks of one manifest. No audio menu
+  either until a source needs it. The quality menu came over without its Anime4K lock,
+  which returns with Anime4K, nor its 720p software decoding cap, which depended on a
+  `disableHardwareAcceleration` this app does not call.

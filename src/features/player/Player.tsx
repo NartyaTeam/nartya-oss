@@ -1,8 +1,10 @@
 import Artplayer from "artplayer";
 import Hls from "hls.js";
 import { useEffect, useRef } from "react";
-import { remember, browserBandwidth } from "./bandwidth.ts";
+import { remember, browserStore } from "./bandwidth.ts";
 import { hlsConfigFor } from "./hls-config.ts";
+import { addQualityMenu, capQuality } from "./quality-menu.ts";
+import { savedQuality } from "./quality.ts";
 
 // Arrow keys seek ten seconds, but artplayer's own step would walk into the very end of
 // the episode and fire ended, which chains to the next one on a key repeat.
@@ -97,6 +99,12 @@ export function Player({ source, poster, startAt, onTime, onEnded, onError }: Pl
       hls.attachMedia(art.video);
 
       const attached = hls;
+      attached.on(Hls.Events.MANIFEST_PARSED, () => {
+        const store = browserStore();
+        capQuality(attached, savedQuality(store));
+        addQualityMenu(art, attached, store);
+      });
+
       // Only a fatal error is the source giving up; hls.js recovers from the rest itself.
       attached.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) latest.current.onError();
@@ -105,7 +113,7 @@ export function Player({ source, poster, startAt, onTime, onEnded, onError }: Pl
       // The rolling estimate, not one fragment's: it is what seeds the next launch.
       attached.on(Hls.Events.FRAG_LOADED, () => {
         const measured = attached.bandwidthEstimate;
-        if (Number.isFinite(measured)) remember(browserBandwidth(), measured, host);
+        if (Number.isFinite(measured)) remember(browserStore(), measured, host);
       });
     }
 

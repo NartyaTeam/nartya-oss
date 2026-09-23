@@ -59,7 +59,7 @@ export function remember(store: Store, bitsPerSecond: number, host: string | nul
   }
 }
 
-export function browserBandwidth(): Store {
+export function browserStore(): Store {
   return {
     get: (key) => globalThis.localStorage.getItem(key),
     set: (key, value) => {
