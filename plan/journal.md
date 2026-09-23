@@ -37,3 +37,7 @@ One line per decision taken while rewriting. Longer reasoning goes in
   either until a source needs it. The quality menu came over without its Anime4K lock,
   which returns with Anime4K, nor its 720p software decoding cap, which depended on a
   `disableHardwareAcceleration` this app does not call.
+- 2026-09-23 - A picked source is the host key (`s1`), no longer the api's slot (`eps2`).
+  The slot is a column of one season's page and names different hosts across languages and
+  seasons, while the key is kept stable across the catalog by the api for this purpose.
+  Kept as it was: a picked source the episode lacks plays nothing rather than another one.
