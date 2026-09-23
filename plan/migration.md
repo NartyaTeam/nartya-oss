@@ -90,7 +90,7 @@ Each slice ships data layer, store, hooks, components and page. All of it is a r
 1. Authentication and session.
 2. Home and catalog.
 3. Anime page.
-4. Player and watch page (HLS, ArtPlayer, subtitles, audio tracks, resume, Anime4K).
+4. Player and watch page (HLS, ArtPlayer, language switch, resume, Anime4K).
 
 **End of slice 4 is the writing switch (D15).** The app runs end to end; from then on all new
 code is written here.

@@ -20,6 +20,7 @@ export type AnimeDetail = {
 
 export type AnimeMeta = {
   titleNative: string | null;
+  country: string | null;
   genres: string[];
   score: number | null;
   year: number | null;

@@ -2,6 +2,7 @@ import type { Resume } from "./progress.ts";
 import { AUTO } from "./sources.ts";
 
 export type ResumeLink = { to: string; label: string };
+export type StartAt = { key: string; seconds: number };
 
 export function watchLink(
   slug: string,
@@ -33,4 +34,10 @@ export function resumeLink(
     };
   }
   return firstSeason ? { to: watchLink(slug, firstSeason, 1, lang), label: "Commencer" } : null;
+}
+
+// A position carried over by a change of language outranks the one saved under the key:
+// that one is older, and for a language never watched it is zero.
+export function settleStart(held: StartAt | null, key: string, saved: number): StartAt {
+  return held?.key === key ? held : { key, seconds: saved };
 }

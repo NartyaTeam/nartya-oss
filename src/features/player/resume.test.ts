@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resumeLink, watchLink } from "./resume.ts";
+import { resumeLink, settleStart, watchLink } from "./resume.ts";
 
 const started = {
   seasonId: "saison1",
@@ -54,4 +54,21 @@ test("nothing watched yet is an invitation to start", () => {
 
 test("with no season there is nothing to start", () => {
   assert.equal(resumeLink("one-piece", null, null, "vostfr"), null);
+});
+
+test("a change of language keeps the position it carried over the saved one", () => {
+  const carried = { key: "bleach:saison1:3:vf", seconds: 400 };
+  assert.deepEqual(settleStart(carried, "bleach:saison1:3:vf", 0), carried);
+});
+
+test("an episode opened afresh starts where it was saved", () => {
+  const before = { key: "bleach:saison1:3:vostfr", seconds: 400 };
+  assert.deepEqual(settleStart(before, "bleach:saison1:4:vostfr", 120), {
+    key: "bleach:saison1:4:vostfr",
+    seconds: 120,
+  });
+  assert.deepEqual(settleStart(null, "bleach:saison1:4:vostfr", 120), {
+    key: "bleach:saison1:4:vostfr",
+    seconds: 120,
+  });
 });

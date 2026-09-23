@@ -71,6 +71,7 @@ function parseMeta(value: unknown): AnimeMeta | null {
   const lang = text(bag["descriptionLang"]);
   return {
     titleNative: text(bag["titleNative"]) || null,
+    country: text(bag["countryOfOrigin"]).toUpperCase() || null,
     genres: strings(bag["genres"]),
     score: count(bag["score"]),
     year: count(bag["year"]),

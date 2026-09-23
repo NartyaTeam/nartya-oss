@@ -42,3 +42,8 @@ One line per decision taken while rewriting. Longer reasoning goes in
   seasons, while the key is kept stable across the catalog by the api for this purpose.
   A picked source the episode lacks now hands over to the automatic order: with the
   choice following the viewer across episodes, playing nothing would happen too often.
+- 2026-09-23 - No subtitle support: the sources burn them into the video, and the shipped
+  app never had any. What slice 4 needed instead is a language switch in the player. It
+  keeps the position, since progress is saved per language and the new one would start at
+  zero, and it keeps the picked source, a host key being the same across languages. The
+  host picker stays on the anime page, out of the player.

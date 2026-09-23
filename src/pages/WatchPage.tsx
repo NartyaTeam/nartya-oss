@@ -8,6 +8,7 @@ import type { SeasonEpisodes } from "../features/anime/types.ts";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
 import { Player } from "../features/player/Player.tsx";
 import { episodeKey, type Progress, type SaveWhat } from "../features/player/progress.ts";
+import { settleStart, type StartAt } from "../features/player/resume.ts";
 import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
@@ -49,11 +50,11 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const watchKey = episodeKey(slug, season?.id ?? "", episode?.number ?? 0, lang);
   // Read fresh every time rather than through the resource cache: leaving an episode and
   // coming straight back would otherwise resume at the position from before the watch.
-  const [resume, setResume] = useState<{ key: string; seconds: number } | null>(null);
+  const [resume, setResume] = useState<StartAt | null>(null);
   useEffect(() => {
     let live = true;
     void progress.positionFor(userId, watchKey).then((seconds) => {
-      if (live) setResume({ key: watchKey, seconds });
+      if (live) setResume((held) => settleStart(held, watchKey, seconds));
     });
     return () => {
       live = false;
@@ -114,6 +115,15 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     );
   }
 
+  const switchLanguage = (to: string): void => {
+    const at = watching.current?.positionSeconds ?? 0;
+    save.current(true);
+    setResume({ key: episodeKey(slug, season.id, episode.number, to), seconds: at });
+    const wanted = new URLSearchParams(params);
+    wanted.set("lang", to);
+    setParams(wanted, { replace: true });
+  };
+
   const page = card.data;
   const title = page.anime.title;
   const back = `/anime/${encodeURIComponent(slug)}?saison=${encodeURIComponent(season.id)}&lang=${encodeURIComponent(lang)}`;
@@ -134,6 +144,12 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
             source={{ url: stream.playable.url, isHls: stream.playable.isHls, host: stream.host }}
             poster={episode.thumbnail ?? page.images?.poster ?? null}
             startAt={stream.startAt}
+            languages={Object.keys(episode.sources).filter(
+              (entry) => (episode.sources[entry] ?? []).length > 0,
+            )}
+            language={lang}
+            country={page.meta?.country ?? null}
+            onLanguage={switchLanguage}
             onTime={(seconds, duration) => {
               watching.current = {
                 slug,

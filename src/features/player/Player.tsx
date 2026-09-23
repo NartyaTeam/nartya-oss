@@ -3,6 +3,7 @@ import Hls from "hls.js";
 import { useEffect, useRef } from "react";
 import { remember, browserStore } from "./bandwidth.ts";
 import { hlsConfigFor } from "./hls-config.ts";
+import { addLanguageMenu } from "./language-menu.ts";
 import { addQualityMenu, capQuality } from "./quality-menu.ts";
 import { savedQuality } from "./quality.ts";
 
@@ -18,19 +19,35 @@ type PlayerProps = {
   source: PlayerSource;
   poster: string | null;
   startAt: number;
+  languages: string[];
+  language: string;
+  country: string | null;
+  onLanguage: (lang: string) => void;
   onTime: (seconds: number, duration: number) => void;
   onEnded: () => void;
   onError: () => void;
 };
 
-export function Player({ source, poster, startAt, onTime, onEnded, onError }: PlayerProps) {
+export function Player({
+  source,
+  poster,
+  startAt,
+  languages,
+  language,
+  country,
+  onLanguage,
+  onTime,
+  onEnded,
+  onError,
+}: PlayerProps) {
   const box = useRef<HTMLDivElement>(null);
   // Primitives, not the object: a caller building it inline would otherwise tear the
   // player down and rebuild it on every render, and it would never finish loading.
   const { url, isHls, host } = source;
+  const offered = languages.join(",");
   // Read inside the player's own callbacks, which outlive the render that created them.
-  const latest = useRef({ startAt, onTime, onEnded, onError });
-  latest.current = { startAt, onTime, onEnded, onError };
+  const latest = useRef({ startAt, onLanguage, onTime, onEnded, onError });
+  latest.current = { startAt, onLanguage, onTime, onEnded, onError };
 
   useEffect(() => {
     const container = box.current;
@@ -53,6 +70,10 @@ export function Player({ source, poster, startAt, onTime, onEnded, onError }: Pl
       pip: true,
       moreVideoAttr: { crossOrigin: "anonymous" },
     });
+
+    addLanguageMenu(art, offered.split(","), language, country, (lang) =>
+      latest.current.onLanguage(lang),
+    );
 
     let hls: Hls | null = null;
 
@@ -122,7 +143,13 @@ export function Player({ source, poster, startAt, onTime, onEnded, onError }: Pl
       hls?.destroy();
       art.destroy(false);
     };
-  }, [url, isHls, host, poster]);
+  }, [url, isHls, host, poster, offered, language, country]);
 
-  return <div ref={box} className="aspect-video w-full bg-black" />;
+  // Artplayer offers no way to turn its hover hints off outside mobile.
+  return (
+    <div
+      ref={box}
+      className="aspect-video w-full bg-black [&_[class*=hint--]]:before:!hidden [&_[class*=hint--]]:after:!hidden"
+    />
+  );
 }

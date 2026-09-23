@@ -13,6 +13,7 @@ const page = {
     externalWatch: [{ host: "france.tv", url: "https://france.tv/one-piece" }],
   },
   anilist: {
+    countryOfOrigin: "jp",
     genres: ["Action"],
     score: 8.7,
     year: 1999,
@@ -48,6 +49,7 @@ test("keeps what the page reads, and drops the rest", () => {
   ]);
   assert.equal(read?.meta?.score, 8.7);
   assert.equal(read?.meta?.descriptionLang, "fr");
+  assert.equal(read?.meta?.country, "JP");
   assert.equal(read?.images?.banner, null);
   assert.deepEqual(read?.seasons, [{ id: "saison1", name: "Saison 1" }]);
 });

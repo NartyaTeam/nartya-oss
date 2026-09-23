@@ -17,15 +17,15 @@ Last updated: 2026-09-23.
   seasons, languages and the source picker.
 - **Phase 4, slice 4 in part.** HLS and mp4 playback through ArtPlayer and hls.js, several
   sources tried at once, resume, next episode, the quality menu (kept from one episode to
-  the next), `npm run electron:dev` for hot reload.
+  the next), a language menu that keeps the position, `npm run electron:dev` for hot reload.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
 
 ## Next
 
-1. **Slice 4, the rest:** subtitles, then Anime4K. That closes the slice and is the writing
-   switch (D15).
+1. **Slice 4, the rest:** Anime4K. That closes the slice and is the writing switch (D15).
+   No subtitles: the sources burn them in.
 2. **Phase 3 leftovers:** deep link, auto update, Discord RPC. None of them blocks the switch.
 3. Slices 5 to 8.
 
