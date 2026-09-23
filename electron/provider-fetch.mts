@@ -1,5 +1,7 @@
 import http from "node:http";
 import https from "node:https";
+import { pipeline, type Readable } from "node:stream";
+import zlib from "node:zlib";
 import { createDohHttpAgent, createDohHttpsAgent, dohAddresses } from "./doh.mts";
 import { createLogger } from "./log.mts";
 import { buildProviderRequest, DEFAULT_TIMEOUT_MS } from "./provider-request.mts";
@@ -10,7 +12,7 @@ export type ProviderResponse = {
   status: number;
   statusText: string;
   headers: http.IncomingHttpHeaders;
-  stream: http.IncomingMessage;
+  stream: Readable;
 };
 
 export type Validate = (url: string) => Promise<Check>;
@@ -99,6 +101,37 @@ function send(url: URL, attempt: Attempt): Promise<http.IncomingMessage> {
   });
 }
 
+function inflater(
+  encoding: string | undefined,
+): zlib.Gunzip | zlib.Inflate | zlib.BrotliDecompress | null {
+  const name = encoding?.trim().toLowerCase();
+  if (name === "gzip" || name === "x-gzip") return zlib.createGunzip();
+  if (name === "deflate") return zlib.createInflate();
+  if (name === "br") return zlib.createBrotliDecompress();
+  return null;
+}
+
+const hasBody = (method: string, status: number): boolean =>
+  method !== "HEAD" && status !== 204 && status !== 304;
+
+// The recipe asks for gzip and brotli the way a browser would, and node:http hands the body
+// over as sent. Once inflated, the length on the wire no longer describes it.
+function decoded(
+  response: http.IncomingMessage,
+  method: string,
+): Pick<ProviderResponse, "headers" | "stream"> {
+  const status = response.statusCode ?? 0;
+  const inflate = hasBody(method, status) ? inflater(response.headers["content-encoding"]) : null;
+  if (!inflate) return { headers: response.headers, stream: response };
+
+  const headers = { ...response.headers };
+  delete headers["content-encoding"];
+  delete headers["content-length"];
+  // An error on either side is reported on the stream the caller reads.
+  pipeline(response, inflate, () => undefined);
+  return { headers, stream: inflate };
+}
+
 // Redirects are followed by hand so every hop is validated: left to the agent, a public
 // host could bounce the request to 127.0.0.1 or the lan.
 export async function followChecked(
@@ -121,8 +154,7 @@ export async function followChecked(
         url: current,
         status,
         statusText: response.statusMessage ?? "",
-        headers: response.headers,
-        stream: response,
+        ...decoded(response, attempt.method ?? "GET"),
       };
     }
 

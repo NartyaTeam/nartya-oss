@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
 import { test } from "node:test";
+import zlib from "node:zlib";
 import { blocked, followChecked, type Attempt } from "./provider-fetch.mts";
 
 const allow = async () => ({ valid: true }) as const;
@@ -128,4 +129,69 @@ test("names a blocked url without leaking what it was", () => {
   const error = blocked("IP privée ou réservée");
   assert.equal(error.message, "URL bloquée : IP privée ou réservée");
   assert.equal((error as NodeJS.ErrnoException).code, "URL_BLOCKED");
+});
+
+const PAGE =
+  "<script>jwplayer().setup({ sources: [{ file: 'https://cdn.test/master.m3u8' }] })</script>";
+
+for (const [encoding, compress] of [
+  ["gzip", zlib.gzipSync],
+  ["deflate", zlib.deflateSync],
+  ["br", zlib.brotliCompressSync],
+] as const) {
+  test(`a ${encoding} body is read as the page it is, not as its compressed bytes`, async () => {
+    const packed = compress(Buffer.from(PAGE));
+    const server = await serve((_request, response) => {
+      response.writeHead(200, {
+        "content-type": "text/html",
+        "content-encoding": encoding,
+        "content-length": String(packed.length),
+      });
+      response.end(packed);
+    });
+
+    try {
+      const result = await followChecked(`${server.origin}/embed`, attempt(), allow);
+      assert.equal(await body(result.stream), PAGE);
+      assert.equal(result.headers["content-encoding"], undefined);
+      assert.equal(result.headers["content-length"], undefined);
+      assert.equal(result.headers["content-type"], "text/html");
+    } finally {
+      server.close();
+    }
+  });
+}
+
+test("a body sent as is keeps its length", async () => {
+  const server = await serve((_request, response) => {
+    response.writeHead(200, { "content-length": "4" });
+    response.end("abcd");
+  });
+
+  try {
+    const result = await followChecked(`${server.origin}/a.ts`, attempt(), allow);
+    assert.equal(result.headers["content-length"], "4");
+    assert.equal(await body(result.stream), "abcd");
+  } finally {
+    server.close();
+  }
+});
+
+test("a head request announcing gzip has no body to inflate, and ends cleanly", async () => {
+  const server = await serve((_request, response) => {
+    response.writeHead(200, { "content-encoding": "gzip", "content-length": "120" });
+    response.end();
+  });
+
+  try {
+    const result = await followChecked(
+      `${server.origin}/a.mp4`,
+      { ...attempt(), method: "HEAD" },
+      allow,
+    );
+    assert.equal(await body(result.stream), "");
+    assert.equal(result.headers["content-length"], "120");
+  } finally {
+    server.close();
+  }
 });
