@@ -21,6 +21,31 @@ test("recognises the private and reserved ranges", () => {
   }
 });
 
+test("sees through an ipv4 address written as ipv6", () => {
+  for (const address of [
+    "::ffff:127.0.0.1",
+    "::ffff:7f00:1",
+    "::FFFF:10.0.0.5",
+    "::ffff:c0a8:101",
+  ]) {
+    assert.equal(isPrivateAddress(address), true, address);
+  }
+  assert.equal(isPrivateAddress("::ffff:8.8.8.8"), false);
+});
+
+test("refuses the addresses no host lives on", () => {
+  for (const address of ["::", "224.0.0.251", "239.255.255.250", "255.255.255.255", "240.0.0.1"]) {
+    assert.equal(isPrivateAddress(address), true, address);
+  }
+});
+
+test("refuses an ipv6 literal pointing home, brackets and all", async () => {
+  const check = await validateExternalUrl("http://[::ffff:127.0.0.1]:8080/", async () => []);
+  assert.equal(check.valid, false);
+  const loopback = await validateExternalUrl("http://[::1]/", async () => ["93.184.216.34"]);
+  assert.equal(loopback.valid, false);
+});
+
 test("treats an empty address as private", () => {
   assert.equal(isPrivateAddress(""), true);
 });

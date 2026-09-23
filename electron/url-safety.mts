@@ -9,7 +9,9 @@ const PRIVATE_RANGES = [
   /^169\.254\./,
   /^0\./,
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
-  /^::1$/,
+  // Multicast, reserved and broadcast: no host to fetch from lives there.
+  /^2(2[4-9]|[3-5]\d)\./,
+  /^::1?$/,
   /^fc/i,
   /^fd/i,
   /^fe80:/i,
@@ -18,9 +20,21 @@ const PRIVATE_RANGES = [
 export type Lookup = (hostname: string) => Promise<string[]>;
 export type Check = { valid: true } | { valid: false; error: string };
 
+// An ipv4 address can come back from a resolver written as ipv6, dotted or in hex.
+function unmapped(address: string): string {
+  const mapped = /^::ffff:(.+)$/i.exec(address)?.[1];
+  if (!mapped || mapped.includes(".")) return mapped ?? address;
+  const [high, low] = mapped.split(":").map((part) => Number.parseInt(part, 16));
+  if (high === undefined || low === undefined || Number.isNaN(high) || Number.isNaN(low)) {
+    return address;
+  }
+  return [high >> 8, high & 255, low >> 8, low & 255].join(".");
+}
+
 export function isPrivateAddress(address: string): boolean {
   if (!address) return true;
-  return PRIVATE_RANGES.some((range) => range.test(address));
+  const plain = unmapped(address);
+  return PRIVATE_RANGES.some((range) => range.test(plain));
 }
 
 // The caller passes the resolver it will fetch with: where DNS is poisoned, another
@@ -37,7 +51,8 @@ export async function validateExternalUrl(value: string, lookup: Lookup): Promis
     return { valid: false, error: "Protocole non autorisé" };
   }
 
-  const hostname = parsed.hostname;
+  // An ipv6 literal keeps its brackets in a URL, where isIP does not recognise it.
+  const hostname = parsed.hostname.replace(/^\[(.*)\]$/, "$1");
   if (isIP(hostname)) {
     if (isPrivateAddress(hostname)) return { valid: false, error: "IP privée ou réservée" };
     return { valid: true };
