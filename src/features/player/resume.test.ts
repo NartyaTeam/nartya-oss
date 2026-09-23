@@ -17,6 +17,15 @@ test("a watch link carries the season, the episode and the language", () => {
   );
 });
 
+test("a source picked on the anime page reaches the watch page", () => {
+  assert.match(watchLink("one-piece", "saison1", 12, "vf", "s1"), /&src=s1$/);
+});
+
+test("the automatic source is the watch page's default, and stays out of the link", () => {
+  assert.doesNotMatch(watchLink("one-piece", "saison1", 12, "vf", "auto"), /src=/);
+  assert.doesNotMatch(watchLink("one-piece", "saison1", 12, "vf"), /src=/);
+});
+
 test("an episode left part way is resumed where it stands", () => {
   const link = resumeLink("one-piece", started, "saison1", "vostfr");
   assert.equal(link?.label, "Reprendre l'épisode 12");

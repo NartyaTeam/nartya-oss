@@ -17,7 +17,7 @@ type SeasonsProps = {
   onChoose: (patch: Record<string, string>) => void;
   onRetry: () => void;
   watched: Record<string, Watched>;
-  watchUrl: (episode: Episode) => string;
+  watchUrl: (episode: Episode, source: string) => string;
 };
 
 export function SeasonsSection(props: SeasonsProps) {
@@ -64,7 +64,7 @@ export function SeasonsSection(props: SeasonsProps) {
           poster={page.images?.poster ?? page.anime.poster}
           seasonId={props.seasonId}
           watched={props.watched}
-          watchUrl={props.watchUrl}
+          watchUrl={(episode) => props.watchUrl(episode, known ? props.source : AUTO_SOURCE)}
         />
       )}
 

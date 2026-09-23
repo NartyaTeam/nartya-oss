@@ -104,7 +104,9 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
           onChoose={choose}
           onRetry={list.reload}
           watched={seen.data ?? {}}
-          watchUrl={(episode: Episode) => watchLink(slug, season.id, episode.number, lang)}
+          watchUrl={(episode: Episode, source: string) =>
+            watchLink(slug, season.id, episode.number, lang, source)
+          }
         />
       )}
     </div>
