@@ -17,10 +17,9 @@ export function orderSources(
 
   if (preferred !== AUTO) {
     const chosen = out.filter((source) => choiceOf(source) === preferred);
+    // Disqualified, or not carried by this episode at all: the choice follows the viewer
+    // from episode to episode, and a missing host is no reason to play nothing.
     if (chosen.length > 0) return chosen;
-    // Picked by hand and every slot of it now disqualified: fall back to the automatic
-    // order. Picked and simply unknown: there is nothing the viewer asked for to play.
-    if (!sources.some((source) => choiceOf(source) === preferred)) return [];
   }
   return out;
 }

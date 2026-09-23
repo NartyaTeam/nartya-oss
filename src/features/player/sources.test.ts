@@ -42,8 +42,11 @@ test("a source picked by hand is the only one tried", () => {
   );
 });
 
-test("a chosen source the episode does not carry plays nothing, rather than something else", () => {
-  assert.deepEqual(orderSources(all, "eps9"), []);
+test("a chosen source the episode does not carry hands over to the automatic order", () => {
+  assert.deepEqual(
+    orderSources(all, "eps9").map((entry) => entry.slot),
+    ["eps1", "eps2", "eps3"],
+  );
 });
 
 test("a chosen source that failed hands back to the automatic order", () => {
