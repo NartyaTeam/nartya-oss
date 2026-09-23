@@ -2,18 +2,21 @@ import type Artplayer from "artplayer";
 import { flagFor, flagHtml } from "../anime/flags.ts";
 import { languageLabel } from "../anime/languages.ts";
 
-export function addLanguageMenu(
+export function showLanguageMenu(
   art: Artplayer,
   languages: string[],
   current: string,
   country: string | null,
   onPick: (lang: string) => void,
 ): void {
-  if (languages.length < 2) return;
+  if (languages.length < 2) {
+    if (art.setting.find("language")) art.setting.remove("language");
+    return;
+  }
   const flagged = (lang: string): string =>
     `<span class="inline-flex items-center gap-2">${flagHtml(flagFor(lang, country))}${languageLabel(lang)}</span>`;
 
-  art.setting.add({
+  art.setting.update({
     name: "language",
     width: 200,
     html: "Langue",

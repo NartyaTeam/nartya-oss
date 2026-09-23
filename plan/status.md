@@ -19,6 +19,9 @@ Last updated: 2026-09-23.
   sources tried at once, resume, next episode, the quality menu (kept from one episode to
   the next), a language menu that keeps the position, Anime4K over WebGPU with its own fixed
   quality, `npm run electron:dev` for hot reload.
+- **Watch page, in the shape of the shipped app.** The player takes the whole window and stays
+  up from one episode to the next, so fullscreen holds. Back button, centred title, next
+  episode with its preview, and the episode panel with seasons and progress.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
@@ -28,11 +31,15 @@ Last updated: 2026-09-23.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
-2. Slices 5 to 7: downloads, profile and lists, settings and legal pages.
-3. Contributor setup: the schema published (phase 5), demo catalog data (D12).
-4. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
-5. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
+1. **Watch page, what is left of it:** skip intro and ending with the end of episode card
+   (segments from the api's `skip` route), then comfort: seek indicator, double click
+   fullscreen without pausing, F key, wheel volume, audio boost. Cast and content warnings
+   come later.
+2. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
+3. Slices 5 to 7: downloads, profile and lists, settings and legal pages.
+4. Contributor setup: the schema published (phase 5), demo catalog data (D12).
+5. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
+6. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
    on Linux drivers Chromium blocklists, which the previous app forced on.
 
 ## Development setup

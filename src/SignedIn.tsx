@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import type { ReactNode } from "react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
@@ -34,54 +35,67 @@ export function SignedIn({
   store,
   onSignOut,
 }: SignedInProps) {
-  return (
-    <HashRouter>
-      <Shell profile={profile} email={session.user.email ?? null} onSignOut={onSignOut}>
-        {catalog && anime ? (
-          <Routes>
-            <Route path="/" element={<CatalogHomePage catalog={catalog} store={store} />} />
-            <Route path="/recherche" element={<SearchPage catalog={catalog} store={store} />} />
-            <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
-            <Route
-              path="/anime/:slug"
-              element={
-                <AnimePage
-                  anime={anime}
-                  store={store}
-                  progress={progress}
-                  userId={session.user.id}
-                />
-              }
-            />
-            <Route
-              path="/watch/:slug"
-              element={
-                <WatchPage
-                  anime={anime}
-                  store={store}
-                  progress={progress}
-                  userId={session.user.id}
-                />
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <div className="px-4 pt-16 sm:px-8">
-                  <Empty title="Page inconnue" note="Ce lien ne mène nulle part." />
-                </div>
-              }
-            />
-          </Routes>
-        ) : (
+  const shell = (content: ReactNode) => (
+    <Shell profile={profile} email={session.user.email ?? null} onSignOut={onSignOut}>
+      {content}
+    </Shell>
+  );
+
+  if (!catalog || !anime) {
+    return (
+      <HashRouter>
+        {shell(
           <div className="px-4 pt-16 sm:px-8">
             <Empty
               title="Catalogue non configuré"
               note="Renseigne VITE_API_BASE pour lire un catalogue. Le catalogue de démonstration arrivera avec le lecteur."
             />
-          </div>
+          </div>,
         )}
-      </Shell>
+      </HashRouter>
+    );
+  }
+
+  // The player takes the whole window, outside the shell.
+  return (
+    <HashRouter>
+      <Routes>
+        <Route
+          path="/watch/:slug"
+          element={
+            <WatchPage anime={anime} store={store} progress={progress} userId={session.user.id} />
+          }
+        />
+        <Route
+          path="*"
+          element={shell(
+            <Routes>
+              <Route path="/" element={<CatalogHomePage catalog={catalog} store={store} />} />
+              <Route path="/recherche" element={<SearchPage catalog={catalog} store={store} />} />
+              <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
+              <Route
+                path="/anime/:slug"
+                element={
+                  <AnimePage
+                    anime={anime}
+                    store={store}
+                    progress={progress}
+                    userId={session.user.id}
+                  />
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <div className="px-4 pt-16 sm:px-8">
+                    <Empty title="Page inconnue" note="Ce lien ne mène nulle part." />
+                  </div>
+                }
+              />
+            </Routes>,
+          )}
+        />
+      </Routes>
     </HashRouter>
   );
 }

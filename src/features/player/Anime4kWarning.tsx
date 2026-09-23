@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../../ui/Button.tsx";
 import { choiceLabel, type Anime4kMode } from "./anime4k-modes.ts";
+import { OUTLINED_ICONS } from "./outlined-icons.ts";
 
 type Anime4kWarningProps = { mode: Anime4kMode; onConfirm: () => void; onCancel: () => void };
 
@@ -19,7 +20,7 @@ export function Anime4kWarning({ mode, onConfirm, onCancel }: Anime4kWarningProp
   const target = document.fullscreenElement ?? document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${OUTLINED_ICONS}`}>
       <button
         type="button"
         aria-label="Annuler"

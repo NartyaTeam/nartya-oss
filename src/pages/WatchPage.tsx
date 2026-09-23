@@ -1,20 +1,25 @@
-import { ArrowLeft, SkipForward } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Anime } from "../features/anime/anime.ts";
-import { DEFAULT_LANGUAGE, languageLabel, pickLanguage } from "../features/anime/languages.ts";
+import { DEFAULT_LANGUAGE, pickLanguage } from "../features/anime/languages.ts";
 import { availableLanguages, episodesIn } from "../features/anime/season.ts";
 import type { SeasonEpisodes } from "../features/anime/types.ts";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
+import { episodeLabel } from "../features/player/episode-label.ts";
+import { BackButton } from "../features/player/BackButton.tsx";
+import { EpisodePanel } from "../features/player/EpisodePanel.tsx";
+import { NextPreview } from "../features/player/NextPreview.tsx";
 import { Player } from "../features/player/Player.tsx";
+import { PlayerStatus } from "../features/player/PlayerStatus.tsx";
 import { episodeKey, type Progress, type SaveWhat } from "../features/player/progress.ts";
 import { settleStart, type StartAt } from "../features/player/resume.ts";
 import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
-import { Button } from "../ui/Button.tsx";
-import { Empty } from "../ui/Empty.tsx";
+
+// Lets the pointer cross the gap between the button and the panel.
+const PANEL_CLOSE_DELAY_MS = 120;
 
 const NO_SEASON: SeasonEpisodes = { name: null, description: null, cover: null, episodes: [] };
 
@@ -23,6 +28,7 @@ type WatchProps = { anime: Anime; store: ResourceStore; progress: Progress; user
 export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const card = useResource(store, `anime:${slug}`, () => anime.page(slug), { persist: true });
   const seasons = card.data?.seasons ?? [];
@@ -92,30 +98,59 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     };
   }, [slug, season?.id, episode?.number, lang]);
 
-  function goTo(number: number): void {
+  const seen = useResource(store, `watched:${slug}:${userId}`, async () => ({
+    ok: true as const,
+    data: await progress.watchedIn(slug, userId),
+  }));
+
+  const [panel, setPanel] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const closing = useRef<number | null>(null);
+  const hoverPanel = (hovered: boolean): void => {
+    if (closing.current !== null) window.clearTimeout(closing.current);
+    closing.current = null;
+    if (!hovered) {
+      closing.current = window.setTimeout(() => setPanel(false), PANEL_CLOSE_DELAY_MS);
+      return;
+    }
+    // What was watched moves while the player runs: the cached read is already behind.
+    if (!panel) seen.reload();
+    setPanel(true);
+  };
+
+  function goTo(number: number, seasonId?: string): void {
     save.current(true);
     const wanted = new URLSearchParams(params);
+    if (seasonId) wanted.set("saison", seasonId);
     wanted.set("ep", String(number));
-    setParams(wanted, { replace: false });
+    // Replaced, so that leaving the player goes back to where it was opened from.
+    setParams(wanted, { replace: true });
   }
 
-  if (!card.data || (list.loading && all.length === 0)) {
-    return <div className="skeleton aspect-video w-full" />;
-  }
+  const page = card.data;
+  const seasonIndex = season ? seasons.indexOf(season) : 0;
+  const leave = (): void => {
+    const state: unknown = window.history.state;
+    const depth = typeof state === "object" && state !== null ? Reflect.get(state, "idx") : 0;
+    if (typeof depth === "number" && depth > 0) navigate(-1);
+    else navigate(`/anime/${encodeURIComponent(slug)}`, { replace: true });
+  };
 
-  if (!episode || !season) {
+  if (!page) {
     return (
-      <div className="px-4 pt-24 sm:px-8">
-        <Empty
-          title="Épisode introuvable"
-          note={list.error ?? "Cette saison n'a rien de disponible dans cette langue."}
-          onRetry={list.error ? list.reload : undefined}
-        />
+      <div className="fixed inset-0 bg-black">
+        <BackButton onClick={leave} shown />
+        {card.error ? (
+          <PlayerStatus note={card.error} onRetry={card.reload} />
+        ) : (
+          <PlayerStatus note="Chargement…" busy />
+        )}
       </div>
     );
   }
 
   const switchLanguage = (to: string): void => {
+    if (!season || !episode) return;
     const at = watching.current?.positionSeconds ?? 0;
     save.current(true);
     setResume({ key: episodeKey(slug, season.id, episode.number, to), seconds: at });
@@ -124,81 +159,101 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     setParams(wanted, { replace: true });
   };
 
-  const page = card.data;
-  const title = page.anime.title;
-  const back = `/anime/${encodeURIComponent(slug)}?saison=${encodeURIComponent(season.id)}&lang=${encodeURIComponent(lang)}`;
+  const ready = stream.playable !== null && resumeAt !== null;
+  const status = (() => {
+    if (list.loading && all.length === 0) return <PlayerStatus note="Chargement…" busy />;
+    if (!episode || !season) {
+      return (
+        <PlayerStatus
+          note={list.error ?? "Cette saison n'a rien de disponible dans cette langue."}
+          onRetry={list.error ? list.reload : undefined}
+        />
+      );
+    }
+    if (ready) return null;
+    if (stream.loading || stream.playable)
+      return <PlayerStatus note="Recherche d'une source…" busy />;
+    return <PlayerStatus note={stream.error ?? "Lecture impossible"} onRetry={stream.retry} />;
+  })();
 
   return (
-    <div className="animate-fade-in pb-16 pt-20">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-8">
-        <Link
-          to={back}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-text"
-        >
-          <ArrowLeft size={16} />
-          {title}
-        </Link>
-
-        {stream.playable && resumeAt !== null ? (
-          <Player
-            source={{ url: stream.playable.url, isHls: stream.playable.isHls, host: stream.host }}
-            poster={episode.thumbnail ?? page.images?.poster ?? null}
-            startAt={stream.startAt}
-            languages={Object.keys(episode.sources).filter(
-              (entry) => (episode.sources[entry] ?? []).length > 0,
-            )}
-            language={lang}
-            country={page.meta?.country ?? null}
-            onLanguage={switchLanguage}
-            onTime={(seconds, duration) => {
-              watching.current = {
-                slug,
-                seasonId: season.id,
-                episodeNumber: episode.number,
-                language: lang,
-                positionSeconds: seconds,
-                duration,
-                title: page.anime.title,
-                cover: page.images?.poster ?? page.anime.poster,
-              };
-              stream.onTime(seconds);
+    <div className="fixed inset-0 bg-black">
+      <Player
+        source={
+          ready && stream.playable
+            ? { url: stream.playable.url, isHls: stream.playable.isHls, host: stream.host }
+            : null
+        }
+        poster={episode?.thumbnail ?? page.images?.poster ?? null}
+        startAt={stream.startAt}
+        title={season && episode ? episodeLabel(season.name, seasonIndex, episode) : ""}
+        hasNext={next !== undefined}
+        onNext={() => {
+          if (next) goTo(next.number);
+        }}
+        onNextHover={setPreview}
+        onEpisodes={hoverPanel}
+        languages={
+          episode
+            ? Object.keys(episode.sources).filter(
+                (entry) => (episode.sources[entry] ?? []).length > 0,
+              )
+            : []
+        }
+        language={lang}
+        country={page.meta?.country ?? null}
+        onLanguage={switchLanguage}
+        onTime={(seconds, duration) => {
+          if (!season || !episode) return;
+          watching.current = {
+            slug,
+            seasonId: season.id,
+            episodeNumber: episode.number,
+            language: lang,
+            positionSeconds: seconds,
+            duration,
+            title: page.anime.title,
+            cover: page.images?.poster ?? page.anime.poster,
+          };
+          stream.onTime(seconds);
+        }}
+        onEnded={() => {
+          save.current(true);
+          if (next) goTo(next.number);
+        }}
+        onError={stream.onFailed}
+      >
+        <BackButton onClick={leave} shown={status !== null} />
+        {status}
+        {preview && !panel && next && (
+          <NextPreview
+            episode={next}
+            cover={page.images?.poster ?? page.anime.poster}
+            onPlay={() => {
+              setPreview(false);
+              goTo(next.number);
             }}
-            onEnded={() => {
-              save.current(true);
-              if (next) goTo(next.number);
-            }}
-            onError={stream.onFailed}
           />
-        ) : (
-          <div className="flex aspect-video w-full items-center justify-center bg-black text-sm text-muted">
-            {stream.loading || stream.playable
-              ? "Recherche d'une source…"
-              : (stream.error ?? "Lecture impossible")}
-          </div>
         )}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl font-bold">
-              {episode.number}. {episode.title}
-            </h1>
-            <p className="text-xs text-muted">
-              {season.name} · {languageLabel(lang)}
-            </p>
-          </div>
-          {!stream.loading && !stream.playable && (
-            <Button variant="ghost" onClick={stream.retry}>
-              Réessayer
-            </Button>
-          )}
-          {next && (
-            <Button onClick={() => goTo(next.number)}>
-              <SkipForward size={16} />
-              Épisode suivant
-            </Button>
-          )}
-        </div>
-      </div>
+        {panel && season && (
+          <EpisodePanel
+            anime={anime}
+            store={store}
+            slug={slug}
+            title={page.anime.title}
+            seasons={seasons}
+            seasonId={season.id}
+            episodeNumber={episode?.number ?? 0}
+            cover={page.images?.poster ?? page.anime.poster}
+            watched={seen.data ?? {}}
+            onPick={(seasonId, number) => {
+              setPanel(false);
+              goTo(number, seasonId);
+            }}
+            onHover={hoverPanel}
+          />
+        )}
+      </Player>
     </div>
   );
 }
