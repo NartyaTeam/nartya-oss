@@ -28,8 +28,10 @@ const platform: Platform = {
     remove: (id) => invoke("downloads-remove", id),
     localUrl: (id, file) => invoke("downloads-local-url", { id, file }),
     openFolder: () => invoke("downloads-open-folder"),
+    setSlots: (count) => invoke("downloads-set-slots", count),
     onChange: (listener) => {
-      const relay = (_event: unknown, item: DownloadItem): void => listener(item);
+      const relay = (_event: unknown, id: string, item: DownloadItem | null): void =>
+        listener(id, item);
       ipcRenderer.on("downloads-changed", relay);
       return () => ipcRenderer.removeListener("downloads-changed", relay);
     },

@@ -41,17 +41,19 @@ function manager(fetch: Fetch = slow(0)) {
   const root = mkdtempSync(join(tmpdir(), "nartya-dl-"));
   const store = createItemStore(join(root, "index.json"), 10_000);
   const changes: DownloadItem[] = [];
+  const removed: string[] = [];
   const downloads = createDownloads({
     store,
     root: () => root,
     fetch,
     ffmpeg: () => Promise.resolve(null),
     onChange: (item) => changes.push(item),
+    onRemove: (id) => removed.push(id),
     resolveHandle: (handle) =>
       handle === "h" ? { url: "https://cdn.test/a.mp4", provider: null } : null,
     trustedScanBase: (base) => base.startsWith("https://api.test"),
   });
-  return { root, store, downloads, changes };
+  return { root, store, downloads, changes, removed };
 }
 
 const episode = { type: "episode", slug: "anime", status: "queued", percent: 0 } as const;
@@ -195,6 +197,7 @@ function reviewManager(fetch: Fetch) {
     fetch,
     ffmpeg: () => Promise.resolve(null),
     onChange: () => {},
+    onRemove: () => {},
     resolveHandle: () => ({ url: "https://cdn.test/a.m3u8", provider: null }),
     trustedScanBase: () => true,
   });
@@ -282,6 +285,7 @@ test("what a crash left running comes back as interrupted, not running for ever"
     fetch: slow(0),
     ffmpeg: () => Promise.resolve(null),
     onChange: () => undefined,
+    onRemove: () => undefined,
     resolveHandle: () => null,
     trustedScanBase: () => false,
   });
@@ -290,4 +294,15 @@ test("what a crash left running comes back as interrupted, not running for ever"
   assert.equal(store.get("a")?.error, "Interrompu");
   assert.equal(store.get("b")?.status, "error");
   assert.equal(store.get("c")?.status, "done");
+});
+
+test("a cancelled download tells the window it is gone", async () => {
+  const { store, downloads, removed } = manager(slow(200));
+  store.set("a", episode);
+  downloads.enqueue({ id: "a", url: "https://cdn.test/a.mp4", provider: null });
+  await settle(30);
+
+  await downloads.cancel("a");
+  await until(() => removed.includes("a"));
+  assert.deepEqual(removed, ["a"]);
 });

@@ -23,6 +23,7 @@ export type Channel =
   | "downloads-remove"
   | "downloads-local-url"
   | "downloads-open-folder"
+  | "downloads-set-slots"
   | "downloads-changed";
 
 // Sign in happens in the system browser, so the app never sees the provider's page. The
@@ -56,7 +57,10 @@ export type DownloadsBridge = {
   // Null when the file is gone: a record can outlive the folder someone emptied by hand.
   localUrl: (id: string, file: string) => Promise<string | null>;
   openFolder: () => Promise<void>;
-  onChange: (listener: (item: DownloadItem) => void) => () => void;
+  // How many episodes download at once, which the offer decides.
+  setSlots: (count: number) => Promise<void>;
+  // An item, or null once the entry is gone: cancelled, removed.
+  onChange: (listener: (id: string, item: DownloadItem | null) => void) => () => void;
 };
 
 export type Platform = {

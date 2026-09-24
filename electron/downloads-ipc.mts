@@ -24,10 +24,14 @@ const log = createLogger("downloads-ipc");
 type Reply = (argument: unknown) => unknown;
 
 // Only to the app's own pages, like the calls: a stray page has no business seeing the library.
-function broadcast(item: DownloadItem, isAppUrl: (url: string) => boolean): void {
+function broadcast(
+  id: string,
+  item: DownloadItem | null,
+  isAppUrl: (url: string) => boolean,
+): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (window.isDestroyed() || !isAppUrl(window.webContents.getURL())) continue;
-    window.webContents.send("downloads-changed", item);
+    window.webContents.send("downloads-changed", id, item);
   }
 }
 
@@ -42,7 +46,8 @@ export function createDownloadHandlers(streams: Streams, isAppUrl: (url: string)
     fetch: (url, { provider, rangeHeader, signal }) =>
       fetchFromProvider(url, { provider, rangeHeader, signal }),
     ffmpeg: findFfmpeg,
-    onChange: (item) => broadcast(item, isAppUrl),
+    onChange: (item) => broadcast(item.id, item, isAppUrl),
+    onRemove: (id) => broadcast(id, null, isAppUrl),
     resolveHandle: (handle) => streamHandles.resolve(handle),
     // Scans are not part of this app yet: no page base is trusted.
     trustedScanBase: () => false,
@@ -67,6 +72,13 @@ export function createDownloadHandlers(streams: Streams, isAppUrl: (url: string)
   };
 
   const handlers: [Channel, Reply][] = [
+    [
+      "downloads-set-slots",
+      (value) => {
+        if (typeof value === "number" && value >= 1)
+          downloads.setMaxConcurrent(Math.min(value, 99));
+      },
+    ],
     ["downloads-list", () => downloads.list()],
     ["downloads-start", start],
     [

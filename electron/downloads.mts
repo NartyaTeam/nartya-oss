@@ -18,6 +18,7 @@ export type Parts = {
   fetch: Fetch;
   ffmpeg: () => Promise<string | null>;
   onChange: (item: DownloadItem) => void;
+  onRemove: (id: string) => void;
   resolveHandle: (handle: string) => { url: string; provider: string | null } | null;
   trustedScanBase: (imageBase: string) => boolean;
 };
@@ -28,7 +29,7 @@ const log = createLogger("downloads");
 const DEFAULT_CONCURRENT = 2;
 
 export function createDownloads(parts: Parts) {
-  const { store, root, fetch, ffmpeg, onChange, resolveHandle, trustedScanBase } = parts;
+  const { store, root, fetch, ffmpeg, onChange, onRemove, resolveHandle, trustedScanBase } = parts;
   const active = new Map<string, AbortController>();
   const queue: Pending[] = [];
   let running = 0;
@@ -150,6 +151,7 @@ export function createDownloads(parts: Parts) {
 
     await rm(itemFolder(root(), id), { recursive: true, force: true }).catch(() => {});
     store.remove(id);
+    onRemove(id);
     return { success: true };
   }
 

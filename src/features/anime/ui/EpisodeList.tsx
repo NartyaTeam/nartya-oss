@@ -1,4 +1,5 @@
-import { ImageOff, Play } from "lucide-react";
+import { CheckSquare, ImageOff, Play, Square } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Watched } from "../../player/progress.ts";
 import { flagFor } from "../flags.ts";
@@ -13,17 +14,18 @@ type RowProps = {
   poster: string | null;
   to: string;
   watched: Watched | undefined;
+  action: ReactNode;
+  // While picking episodes to download, a row selects instead of opening the player.
+  picking: { picked: boolean; toggle: () => void } | null;
 };
 
-function EpisodeRow({ episode, lang, country, poster, to, watched }: RowProps) {
+function EpisodeRow(props: RowProps) {
+  const { episode, lang, country, poster, to, watched, action, picking } = props;
   const image = episode.thumbnail ?? poster;
   const started = watched !== undefined && !watched.completed && watched.percent > 0;
 
-  return (
-    <Link
-      to={to}
-      className="group flex gap-3 rounded-lg p-2 transition-colors hover:bg-white/[0.04]"
-    >
+  const body = (
+    <>
       <div
         className={`relative aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-surface-2 sm:w-48 ${
           started ? "ring-2 ring-primary/70" : ""
@@ -76,7 +78,34 @@ function EpisodeRow({ episode, lang, country, poster, to, watched }: RowProps) {
           </p>
         )}
       </div>
-    </Link>
+    </>
+  );
+
+  return (
+    <div className="group flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-white/[0.04]">
+      {picking ? (
+        <button
+          type="button"
+          onClick={picking.toggle}
+          className="flex min-w-0 flex-1 gap-3 text-left"
+        >
+          {body}
+        </button>
+      ) : (
+        <Link to={to} className="flex min-w-0 flex-1 gap-3">
+          {body}
+        </Link>
+      )}
+      {picking ? (
+        <span className={picking.picked ? "px-2 text-primary" : "px-2 text-muted"}>
+          {picking.picked ? <CheckSquare size={20} /> : <Square size={20} />}
+        </span>
+      ) : (
+        // A fixed slot: the button changes width with its state and its percentage, and the
+        // text beside it would move with every tick.
+        action && <div className="flex w-28 shrink-0 justify-end">{action}</div>
+      )}
+    </div>
   );
 }
 
@@ -88,10 +117,13 @@ type ListProps = {
   watchUrl: (episode: Episode) => string;
   watched: Record<string, Watched>;
   seasonId: string;
+  action: (episode: Episode) => ReactNode;
+  picked: Set<number> | null;
+  onPick: (episode: Episode) => void;
 };
 
 export function EpisodeList(props: ListProps) {
-  const { episodes, lang, country, poster, watchUrl, watched, seasonId } = props;
+  const { episodes, lang, country, poster, watchUrl, watched, seasonId, picked } = props;
   return (
     <div className="flex flex-col gap-1">
       {episodes.map((episode) => (
@@ -103,6 +135,12 @@ export function EpisodeList(props: ListProps) {
           poster={poster}
           to={watchUrl(episode)}
           watched={watched[`${seasonId}:${String(episode.number)}`]}
+          action={props.action(episode)}
+          picking={
+            picked
+              ? { picked: picked.has(episode.number), toggle: () => props.onPick(episode) }
+              : null
+          }
         />
       ))}
     </div>

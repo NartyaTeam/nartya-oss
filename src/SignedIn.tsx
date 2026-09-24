@@ -1,8 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
+import { useDownloads } from "./features/downloads/store.ts";
+import { activeTier, downloadSlots } from "./features/session/premium.ts";
+import { getPlatform } from "./lib/platform.ts";
 import type { Profile } from "./features/session/profile.ts";
 import type { ResourceStore } from "./lib/resource-store.ts";
 import type { Progress } from "./features/player/progress.ts";
@@ -35,6 +38,12 @@ export function SignedIn({
   store,
   onSignOut,
 }: SignedInProps) {
+  useEffect(() => useDownloads.getState().watch(), []);
+  const slots = downloadSlots(activeTier(profile, Date.now()));
+  useEffect(() => {
+    void getPlatform()?.downloads.setSlots(slots);
+  }, [slots]);
+
   const shell = (content: ReactNode) => (
     <Shell profile={profile} email={session.user.email ?? null} onSignOut={onSignOut}>
       {content}

@@ -3,6 +3,9 @@ import { availableLanguages, choiceOf, episodesIn, searchEpisodes, sourcesFor } 
 import type { Watched } from "../../player/progress.ts";
 import type { AnimePage, Episode } from "../types.ts";
 import { Empty } from "../../../ui/Empty.tsx";
+import { PickBar } from "../../downloads/PickBar.tsx";
+import { SeasonDownloads } from "../../downloads/SeasonDownloads.tsx";
+import { useSeasonDownloads } from "../../downloads/useSeasonDownloads.tsx";
 import { EpisodeList } from "./EpisodeList.tsx";
 import { AUTO_SOURCE, SeasonPicker } from "./SeasonPicker.tsx";
 
@@ -32,8 +35,13 @@ export function SeasonsSection(props: SeasonsProps) {
   const sources = sourcesFor(episodes, lang);
   const known = sources.some((entry) => choiceOf(entry) === props.source);
 
-  const found = searchEpisodes(episodesIn(episodes, lang), search);
+  const playable = episodesIn(episodes, lang);
+  const found = searchEpisodes(playable, search);
   const shown = reversed ? [...found].reverse() : found;
+  const downloads = useSeasonDownloads(
+    { page, seasonId: props.seasonId, lang, source: known ? props.source : AUTO_SOURCE },
+    playable,
+  );
 
   return (
     <section className="mt-10 px-4 md:px-14">
@@ -52,11 +60,18 @@ export function SeasonsSection(props: SeasonsProps) {
         onSearch={(term) => setTyped({ season: props.seasonId, term })}
         reversed={reversed}
         onReverse={() => setReversed(!reversed)}
+        actions={
+          downloads.enabled && playable.length > 0 ? (
+            <SeasonDownloads {...downloads.controls} />
+          ) : null
+        }
       />
 
       {loading && shown.length === 0 && (
         <p className="text-sm text-muted">Chargement des épisodes…</p>
       )}
+
+      {downloads.picked && <PickBar {...downloads.pickBar} />}
 
       {shown.length > 0 && (
         <EpisodeList
@@ -67,6 +82,9 @@ export function SeasonsSection(props: SeasonsProps) {
           seasonId={props.seasonId}
           watched={props.watched}
           watchUrl={(episode) => props.watchUrl(episode, known ? props.source : AUTO_SOURCE)}
+          action={(episode) => (downloads.enabled ? downloads.action(episode) : null)}
+          picked={downloads.picked}
+          onPick={downloads.toggle}
         />
       )}
 

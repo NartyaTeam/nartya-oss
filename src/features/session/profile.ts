@@ -5,6 +5,8 @@ export type Profile = {
   username: string | null;
   avatar: string | null;
   lastLogin: string | null;
+  premiumTier: string | null;
+  premiumUntil: string | null;
 };
 
 // The account is gone when the server says so, unknown when the network does not answer:
@@ -31,6 +33,8 @@ export function parseProfile(row: unknown): Profile | null {
     username: typeof record["username"] === "string" ? record["username"] : null,
     avatar: typeof record["avatar"] === "string" ? record["avatar"] : null,
     lastLogin: typeof record["last_login"] === "string" ? record["last_login"] : null,
+    premiumTier: typeof record["premium_tier"] === "string" ? record["premium_tier"] : null,
+    premiumUntil: typeof record["premium_until"] === "string" ? record["premium_until"] : null,
   };
 }
 
@@ -69,7 +73,7 @@ export function supabaseProfiles(client: SupabaseClient): ProfileSource {
     fetch: async (userId) => {
       const { data, error } = await client
         .from("profiles")
-        .select("id, username, avatar, last_login")
+        .select("id, username, avatar, last_login, premium_tier, premium_until")
         .eq("id", userId)
         .maybeSingle();
       return { row: data, failed: error !== null };

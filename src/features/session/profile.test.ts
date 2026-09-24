@@ -40,6 +40,8 @@ test("keeps only the columns the app reads, whatever the row carries", () => {
     username: "zeleff",
     avatar: null,
     lastLogin: "2026-09-01T00:00:00.000Z",
+    premiumTier: null,
+    premiumUntil: null,
   });
 });
 
@@ -53,6 +55,8 @@ test("a row without an id is not a profile", () => {
     username: null,
     avatar: null,
     lastLogin: null,
+    premiumTier: null,
+    premiumUntil: null,
   });
 });
 

@@ -1,4 +1,5 @@
 import { ArrowDownUp, Search, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { Select } from "../../../ui/Select.tsx";
 import { flagFor } from "../flags.ts";
 import { languageLabel } from "../languages.ts";
@@ -24,6 +25,7 @@ type PickerProps = {
   onSearch: (term: string) => void;
   reversed: boolean;
   onReverse: () => void;
+  actions: ReactNode;
 };
 
 export function SeasonPicker(props: PickerProps) {
@@ -77,6 +79,8 @@ export function SeasonPicker(props: PickerProps) {
           ]}
         />
       )}
+
+      {props.actions}
 
       {/* The search keeps shrinking while there is room, and drops to its own full width line
           rather than ending up cramped under the selectors. */}
