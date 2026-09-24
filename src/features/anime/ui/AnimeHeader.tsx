@@ -134,7 +134,7 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: Heade
       </div>
 
       <div className="relative z-10 -mt-44 flex flex-col gap-8 px-4 md:flex-row md:px-14">
-        <div className="w-44 shrink-0 self-start md:w-52">
+        <div className="w-56 shrink-0 self-start md:w-60">
           <div className="overflow-hidden rounded-lg shadow-card ring-1 ring-white/10">
             {poster ? (
               <img src={poster} alt={anime.title} className="aspect-[2/3] w-full object-cover" />
@@ -144,7 +144,7 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: Heade
           </div>
           {resume && (
             <Link to={resume.to} className="mt-3 block">
-              <Button size="lg" className="w-full">
+              <Button className="w-full whitespace-nowrap py-3">
                 <Play size={18} className="shrink-0 fill-current" />
                 {resume.label}
               </Button>
@@ -152,15 +152,13 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: Heade
           )}
         </div>
 
-        <div className="flex-1 pt-2 md:pt-28">
+        <div className="flex-1 pt-2 md:pt-20">
           {images?.clearLogo ? (
-            <span className="relative block h-28 w-[80%] overflow-hidden md:h-32">
-              <img
-                src={images.clearLogo}
-                alt={anime.title}
-                className="absolute inset-0 h-full w-full origin-left object-contain object-left"
-              />
-            </span>
+            <img
+              src={images.clearLogo}
+              alt={anime.title}
+              className="block max-h-36 max-w-[80%] md:max-h-44"
+            />
           ) : (
             <h1 className="text-glow font-display text-4xl font-extrabold leading-tight md:text-5xl">
               {anime.title}
