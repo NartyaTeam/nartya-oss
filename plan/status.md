@@ -74,9 +74,3 @@ Security work is kept out of feature sessions on purpose.
   `anon` 79. The allow list needs review before the query goes into CI.
 - The six "readable by all" policies on catalog tables are neutralised by revoked grants.
   Phase 5 drops them, as planned.
-- 2026-09-24 - Films, OAV and side seasons ("Autres") never show episode metadata: the api
-  fills them with the main series' episodes by position, and the client cannot tell a real
-  match. Their own anime-sama name, or "Film 3", "Épisode 1", is shown instead, at the cost
-  of the rare side season whose metadata was right.
-- 2026-09-24 - Skip settings wait for the settings page. Until then the player behaves as the
-  previous app did by default: skip button shown, next episode chained, no automatic skip.
