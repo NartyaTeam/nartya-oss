@@ -1,8 +1,11 @@
 import { ArrowDownUp, Search, X } from "lucide-react";
 import { Select } from "../../../ui/Select.tsx";
+import { flagFor } from "../flags.ts";
 import { languageLabel } from "../languages.ts";
 import { choiceOf } from "../season.ts";
+import { groupSeasons } from "../season-groups.ts";
 import type { Season, Source } from "../types.ts";
+import { Flag } from "./Flag.tsx";
 
 export const AUTO_SOURCE = "auto";
 
@@ -13,6 +16,7 @@ type PickerProps = {
   languages: string[];
   lang: string;
   onLang: (lang: string) => void;
+  country: string | null;
   sources: Source[];
   source: string;
   onSource: (slot: string) => void;
@@ -24,6 +28,7 @@ type PickerProps = {
 
 export function SeasonPicker(props: PickerProps) {
   const { seasons, languages, sources, search } = props;
+  const groups = groupSeasons(seasons);
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2.5">
@@ -33,7 +38,13 @@ export function SeasonPicker(props: PickerProps) {
           value={props.season}
           onValueChange={props.onSeason}
           className="min-w-[9rem]"
-          options={seasons.map((season) => ({ value: season.id, label: season.name }))}
+          options={groups.flatMap((group) =>
+            group.seasons.map((season) => ({
+              value: season.id,
+              label: season.name,
+              group: groups.length > 1 ? group.label : undefined,
+            })),
+          )}
         />
       )}
 
@@ -43,7 +54,11 @@ export function SeasonPicker(props: PickerProps) {
           value={props.lang}
           onValueChange={props.onLang}
           className="min-w-[8.5rem]"
-          options={languages.map((lang) => ({ value: lang, label: languageLabel(lang) }))}
+          options={languages.map((lang) => ({
+            value: lang,
+            label: languageLabel(lang),
+            icon: <Flag code={flagFor(lang, props.country)} />,
+          }))}
         />
       )}
 

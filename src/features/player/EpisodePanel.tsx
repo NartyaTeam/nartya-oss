@@ -1,6 +1,7 @@
 import { ChevronLeft, ImageOff, Loader2, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Anime } from "../anime/anime.ts";
+import { groupSeasons } from "../anime/season-groups.ts";
 import type { Season } from "../anime/types.ts";
 import type { ResourceStore } from "../../lib/resource-store.ts";
 import { useResource } from "../../lib/use-resource.ts";
@@ -58,6 +59,7 @@ export function EpisodePanel({
     playingRow.current?.scrollIntoView({ block: "center" });
   }, [shown, viewed]);
   const several = seasons.length > 1;
+  const groups = groupSeasons(seasons);
 
   return (
     <div
@@ -84,22 +86,31 @@ export function EpisodePanel({
 
       <div className="flex-1 overflow-y-auto overscroll-contain">
         {choosingSeason ? (
-          seasons.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => {
-                setViewed(entry.id);
-                setChoosingSeason(false);
-                setOpen(null);
-              }}
-              className={`relative flex w-full items-center border-b border-white/5 px-6 py-5 text-left text-lg font-semibold hover:bg-white/10 ${entry.id === viewed ? "bg-white/5" : ""}`}
-            >
-              {entry.id === seasonId && (
-                <span className="absolute inset-y-0 left-0 w-1 bg-primary" />
+          groups.map((group) => (
+            <div key={group.label}>
+              {groups.length > 1 && (
+                <p className="select-none px-6 pb-2 pt-5 text-xs font-medium uppercase tracking-wider text-white/40">
+                  {group.label}
+                </p>
               )}
-              {entry.name}
-            </button>
+              {group.seasons.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => {
+                    setViewed(entry.id);
+                    setChoosingSeason(false);
+                    setOpen(null);
+                  }}
+                  className={`relative flex w-full items-center border-b border-white/5 px-6 py-5 text-left text-lg font-semibold hover:bg-white/10 ${entry.id === viewed ? "bg-white/5" : ""}`}
+                >
+                  {entry.id === seasonId && (
+                    <span className="absolute inset-y-0 left-0 w-1 bg-primary" />
+                  )}
+                  {entry.name}
+                </button>
+              ))}
+            </div>
           ))
         ) : list.loading && episodes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-white/60">

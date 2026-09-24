@@ -17,6 +17,7 @@ import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
+import { firstSeason } from "../features/anime/season-groups.ts";
 
 // Lets the pointer cross the gap between the button and the panel.
 const PANEL_CLOSE_DELAY_MS = 120;
@@ -32,7 +33,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
 
   const card = useResource(store, `anime:${slug}`, () => anime.page(slug), { persist: true });
   const seasons = card.data?.seasons ?? [];
-  const season = seasons.find((entry) => entry.id === params.get("saison")) ?? seasons[0];
+  const season = seasons.find((entry) => entry.id === params.get("saison")) ?? firstSeason(seasons);
 
   const list = useResource(
     store,

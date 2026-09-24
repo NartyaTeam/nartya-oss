@@ -1,8 +1,10 @@
 import { ImageOff, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Watched } from "../../player/progress.ts";
+import { flagFor } from "../flags.ts";
 import { languageLabel } from "../languages.ts";
 import type { Episode } from "../types.ts";
+import { Flag } from "./Flag.tsx";
 
 // Numbers can be fractional: a named special sits between two episodes rather than taking
 // a number of its own.
@@ -12,12 +14,13 @@ const displayNumber = (episode: Episode): string =>
 type RowProps = {
   episode: Episode;
   lang: string;
+  country: string | null;
   poster: string | null;
   to: string;
   watched: Watched | undefined;
 };
 
-function EpisodeRow({ episode, lang, poster, to, watched }: RowProps) {
+function EpisodeRow({ episode, lang, country, poster, to, watched }: RowProps) {
   const image = episode.thumbnail ?? poster;
   const started = watched !== undefined && !watched.completed && watched.percent > 0;
 
@@ -47,7 +50,8 @@ function EpisodeRow({ episode, lang, poster, to, watched }: RowProps) {
         <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-bold backdrop-blur-sm">
           {displayNumber(episode)}
         </span>
-        <span className="absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[0.62rem] font-bold backdrop-blur-sm">
+        <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[0.62rem] font-bold backdrop-blur-sm">
+          <Flag code={flagFor(lang, country)} />
           {languageLabel(lang)}
         </span>
 
@@ -84,13 +88,15 @@ function EpisodeRow({ episode, lang, poster, to, watched }: RowProps) {
 type ListProps = {
   episodes: Episode[];
   lang: string;
+  country: string | null;
   poster: string | null;
   watchUrl: (episode: Episode) => string;
   watched: Record<string, Watched>;
   seasonId: string;
 };
 
-export function EpisodeList({ episodes, lang, poster, watchUrl, watched, seasonId }: ListProps) {
+export function EpisodeList(props: ListProps) {
+  const { episodes, lang, country, poster, watchUrl, watched, seasonId } = props;
   return (
     <div className="flex flex-col gap-1">
       {episodes.map((episode) => (
@@ -98,6 +104,7 @@ export function EpisodeList({ episodes, lang, poster, watchUrl, watched, seasonI
           key={episode.number}
           episode={episode}
           lang={lang}
+          country={country}
           poster={poster}
           to={watchUrl(episode)}
           watched={watched[`${seasonId}:${String(episode.number)}`]}

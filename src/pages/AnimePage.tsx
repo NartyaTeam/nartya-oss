@@ -12,6 +12,7 @@ import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
 import { Empty } from "../ui/Empty.tsx";
+import { firstSeason } from "../features/anime/season-groups.ts";
 
 const NO_SEASON: SeasonEpisodes = { name: null, description: null, cover: null, episodes: [] };
 
@@ -38,7 +39,7 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
   const card = useResource(store, `anime:${slug}`, () => anime.page(slug), { persist: true });
 
   const seasons = card.data?.seasons ?? [];
-  const season = seasons.find((entry) => entry.id === params.get("saison")) ?? seasons[0];
+  const season = seasons.find((entry) => entry.id === params.get("saison")) ?? firstSeason(seasons);
 
   const list = useResource(
     store,

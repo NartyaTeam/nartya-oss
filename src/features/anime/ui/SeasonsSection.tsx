@@ -44,6 +44,7 @@ export function SeasonsSection(props: SeasonsProps) {
         languages={languages}
         lang={lang}
         onLang={(value) => props.onChoose({ lang: value })}
+        country={page.meta?.country ?? null}
         sources={sources}
         source={known ? props.source : AUTO_SOURCE}
         onSource={(value) => props.onChoose({ src: value })}
@@ -61,6 +62,7 @@ export function SeasonsSection(props: SeasonsProps) {
         <EpisodeList
           episodes={shown}
           lang={lang}
+          country={page.meta?.country ?? null}
           poster={page.images?.poster ?? page.anime.poster}
           seasonId={props.seasonId}
           watched={props.watched}
