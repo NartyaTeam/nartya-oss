@@ -3,7 +3,7 @@
 Where the rewrite stands, updated at the end of each working session. The phases themselves
 are in [migration.md](migration.md), the reasons in [journal.md](journal.md).
 
-Last updated: 2026-09-23.
+Last updated: 2026-09-24.
 
 ## Done
 
@@ -22,6 +22,15 @@ Last updated: 2026-09-23.
 - **Watch page, in the shape of the shipped app.** The player takes the whole window and stays
   up from one episode to the next, so fullscreen holds. Back button, centred title, next
   episode with its preview, and the episode panel with seasons and progress.
+- **Watch page, finished for now** (2026-09-24). Skip the opening and ending from the api's
+  `skip` route, with a notice when a scene follows the credits and a ten second card before
+  the next episode. Seek indicator, double click fullscreen without pausing, F key, wheel
+  volume, audio boost up to 300 %. The skip settings of the previous app are fixed at its
+  defaults until the settings page exists.
+- **Anime page, polished** (2026-09-24). Seasons grouped by kind (seasons, Kai, films, OAV,
+  the rest), sorted by their number, and an anime opens on its first season. Flags next to
+  each language. Films, OAV and side seasons show their own name and place instead of the
+  series' episodes the api fills them with.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
@@ -31,16 +40,18 @@ Last updated: 2026-09-23.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Watch page, what is left of it:** skip intro and ending with the end of episode card
-   (segments from the api's `skip` route), then comfort: seek indicator, double click
-   fullscreen without pausing, F key, wheel volume, audio boost. Cast and content warnings
-   come later.
+1. **Slice 5, downloads**, on top of the download manager already ported to the main process.
 2. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
-3. Slices 5 to 7: downloads, profile and lists, settings and legal pages.
+3. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
+   skip settings (auto chaining, skip button, auto skip) and the audio boost.
 4. Contributor setup: the schema published (phase 5), demo catalog data (D12).
 5. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
 6. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
-   on Linux drivers Chromium blocklists, which the previous app forced on.
+   on Linux drivers Chromium blocklists, which the previous app forced on. Cast and content
+   warnings in the player.
+7. **In `nartya-api-v2`**, not done here: it fills films, OAV and side seasons with the main
+   series' episodes, which the client now hides; and a native title reduced to a digit
+   ("第2期" to "2") matched "Ranma 1/2", fixed locally but not committed.
 
 ## Development setup
 
@@ -63,3 +74,9 @@ Security work is kept out of feature sessions on purpose.
   `anon` 79. The allow list needs review before the query goes into CI.
 - The six "readable by all" policies on catalog tables are neutralised by revoked grants.
   Phase 5 drops them, as planned.
+- 2026-09-24 - Films, OAV and side seasons ("Autres") never show episode metadata: the api
+  fills them with the main series' episodes by position, and the client cannot tell a real
+  match. Their own anime-sama name, or "Film 3", "Épisode 1", is shown instead, at the cost
+  of the rare side season whose metadata was right.
+- 2026-09-24 - Skip settings wait for the settings page. Until then the player behaves as the
+  previous app did by default: skip button shown, next episode chained, no automatic skip.
