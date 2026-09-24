@@ -34,6 +34,13 @@ export function createDownloads(parts: Parts) {
   let running = 0;
   let maxConcurrent = DEFAULT_CONCURRENT;
 
+  // Nothing runs yet at this point: whatever says otherwise was cut short by a crash.
+  for (const [id, item] of Object.entries(store.all())) {
+    if (item.status === "queued" || item.status === "downloading" || item.status === "processing") {
+      store.set(id, { status: "error", error: "Interrompu" });
+    }
+  }
+
   function emit(id: string): void {
     const item = store.get(id);
     if (item) onChange(item);

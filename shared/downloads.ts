@@ -40,3 +40,25 @@ export type ScanDownload = Common & {
 };
 
 export type DownloadItem = EpisodeDownload | ScanDownload;
+
+// One entry per episode and language. The main process cancels a season by this prefix.
+export const downloadId = (slug: string, seasonId: string, ep: number, lang: string): string =>
+  `${slug}::${seasonId}::${String(ep)}::${lang}`;
+
+export const seasonPrefix = (slug: string, seasonId: string): string => `${slug}::${seasonId}::`;
+
+// The renderer hands a sealed source token: the main process resolves it, the url stays there.
+export type DownloadRequest = {
+  token: string;
+  slug: string;
+  seasonId: string;
+  ep: number;
+  lang: string;
+  animeTitle: string;
+  animeCover: string | null;
+  epThumb: string | null;
+  epTitle: string | null;
+  seasonName: string | null;
+};
+
+export type DownloadOutcome = { ok: true } | { ok: false; error: string };

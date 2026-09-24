@@ -249,3 +249,45 @@ test("a removed entry is not brought back by a late progress tick", async () => 
 
   assert.equal(store.get("a"), null, "a record with no title breaks the offline library");
 });
+
+test("an episode waiting in the queue is not queued a second time", async () => {
+  const { store, downloads } = manager(slow(200));
+  const payload = (id: string) => ({
+    id,
+    handle: "h",
+    slug: "anime",
+    seasonId: "s1",
+    ep: 1,
+    lang: "vostfr",
+  });
+  await downloads.start(payload("a"));
+  await downloads.start(payload("b"));
+  await downloads.start(payload("c"));
+  assert.equal(store.get("c")?.status, "queued");
+
+  const again = await downloads.start(payload("c"));
+  assert.equal(again.alreadyExists, true);
+});
+
+test("what a crash left running comes back as interrupted, not running for ever", () => {
+  const root = mkdtempSync(join(tmpdir(), "nartya-dl-"));
+  const store = createItemStore(join(root, "index.json"), 10_000);
+  store.set("a", { ...episode, status: "downloading", percent: 40 });
+  store.set("b", episode);
+  store.set("c", { ...episode, status: "done", percent: 100 });
+
+  createDownloads({
+    store,
+    root: () => root,
+    fetch: slow(0),
+    ffmpeg: () => Promise.resolve(null),
+    onChange: () => undefined,
+    resolveHandle: () => null,
+    trustedScanBase: () => false,
+  });
+
+  assert.equal(store.get("a")?.status, "error");
+  assert.equal(store.get("a")?.error, "Interrompu");
+  assert.equal(store.get("b")?.status, "error");
+  assert.equal(store.get("c")?.status, "done");
+});

@@ -18,7 +18,8 @@ function open(): void {
 // exit rather than quit: quit lets the module keep running to whenReady first.
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
-registerPlatformHandlers(isAppUrl, readApiBase(here));
+const flush = registerPlatformHandlers(isAppUrl, readApiBase(here));
+app.on("before-quit", flush);
 
 app.on("second-instance", () => {
   const [window] = BrowserWindow.getAllWindows();

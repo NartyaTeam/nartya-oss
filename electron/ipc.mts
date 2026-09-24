@@ -1,8 +1,9 @@
 import { app, ipcMain, shell, type IpcMainInvokeEvent } from "electron";
 import type { AppInfo, Channel, OsPlatform, StreamOutcome } from "../shared/platform.ts";
 import { createAuth, type Auth } from "./auth.mts";
+import { createDownloadHandlers } from "./downloads-ipc.mts";
 import { localProxy } from "./proxy.mts";
-import { createStreams } from "./stream.mts";
+import { createStreams, type Streams } from "./stream.mts";
 
 export type IsAppUrl = (url: string) => boolean;
 
@@ -29,7 +30,7 @@ function osPlatform(): OsPlatform {
   return "linux";
 }
 
-export function registerStreamHandlers(isAppUrl: IsAppUrl, apiBase: string | null): void {
+export function registerStreamHandlers(isAppUrl: IsAppUrl, apiBase: string | null): Streams {
   let accessToken: string | null = null;
   const streams = createStreams(() => ({
     apiBase,
@@ -55,15 +56,20 @@ export function registerStreamHandlers(isAppUrl: IsAppUrl, apiBase: string | nul
       ? { ok: true, url, isHls: outcome.value.isHls }
       : { ok: false, error: "Proxy local indisponible" };
   });
+  return streams;
 }
 
-export function registerPlatformHandlers(isAppUrl: IsAppUrl, apiBase: string | null): void {
+// Returns what has to run before quitting: the download index is written on a delay.
+export function registerPlatformHandlers(isAppUrl: IsAppUrl, apiBase: string | null): () => void {
   secureHandle("app-info", isAppUrl, (): AppInfo => ({
     version: app.getVersion(),
     platform: osPlatform(),
   }));
   registerAuthHandlers(isAppUrl, createAuth({ openUrl: (url) => shell.openExternal(url) }));
-  registerStreamHandlers(isAppUrl, apiBase);
+  const streams = registerStreamHandlers(isAppUrl, apiBase);
+  const downloads = createDownloadHandlers(streams, isAppUrl);
+  for (const [channel, reply] of downloads.handlers) secureHandle(channel, isAppUrl, reply);
+  return downloads.flush;
 }
 
 export function registerAuthHandlers(isAppUrl: IsAppUrl, auth: Auth): void {

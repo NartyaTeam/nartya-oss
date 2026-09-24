@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import { transformPlaylist } from "./hls-playlist.mts";
 import { toCastUrl } from "./cast-url.mts";
+import { resolveLocalFile } from "./download-paths.mts";
 import { createCastListener } from "./proxy-cast.mts";
 import { createLogger } from "./log.mts";
 import { fetchUrl, type ProviderResponse } from "./provider-fetch.mts";
@@ -319,12 +320,17 @@ export function createProxy(parts: ProxyParts) {
   };
 }
 
+let downloadsRoot: string | null = null;
+
+// Until the downloads know their folder, nothing local is served.
+export function serveDownloads(root: string): void {
+  downloadsRoot = root;
+}
+
 export const localProxy = createProxy({
   handles: streamHandles,
   cache: segmentCache,
   fetch: fetchUrl,
   detectKey: (url) => sourceRecipe.detectKey(url),
-  // Downloads are not wired to a window yet, so nothing local can be served. Replaced
-  // when the downloads page arrives and the manager knows its root.
-  localFile: () => null,
+  localFile: (id, rel) => resolveLocalFile(downloadsRoot, id, rel),
 });

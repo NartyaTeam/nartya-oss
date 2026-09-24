@@ -111,3 +111,5 @@ export function createStreams(session: () => Session) {
     },
   };
 }
+
+export type Streams = ReturnType<typeof createStreams>;

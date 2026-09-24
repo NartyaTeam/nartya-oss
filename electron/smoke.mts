@@ -62,6 +62,19 @@ async function run(): Promise<void> {
     fail(`expected a refusal without an api, got ${JSON.stringify(stream)}`);
   }
 
+  const library: unknown = await window.webContents
+    .executeJavaScript("window.platform.downloads.list()")
+    .catch((error: unknown) => fail(`downloads bridge rejected: ${String(error)}`));
+  if (!Array.isArray(library)) fail(`expected a list of downloads, got ${typeof library}`);
+  const refused: unknown = await window.webContents.executeJavaScript(
+    'window.platform.downloads.start({ token: "", slug: "x" })',
+  );
+  if ((refused as { ok?: unknown }).ok !== false) fail("a malformed download was accepted");
+  const missing: unknown = await window.webContents.executeJavaScript(
+    'window.platform.downloads.localUrl("nothing::here::1::vf", "video.mp4")',
+  );
+  if (missing !== null) fail("a file that does not exist got a playback url");
+
   const intruder = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -81,7 +94,8 @@ async function run(): Promise<void> {
 
   console.log(
     `smoke: bridge answered version ${version} on ${platform}, served ${redirect}, ` +
-      `refused a file url and a foreign page, and playback without an api (${String(outcome.error)})`,
+      `refused a file url and a foreign page, and playback without an api (${String(outcome.error)}), ` +
+      `listed ${String(library.length)} downloads and refused a malformed one`,
   );
   app.exit(0);
 }

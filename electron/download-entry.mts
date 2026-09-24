@@ -62,9 +62,15 @@ export function createEntries(parts: EntryParts) {
     }
   }
 
+  // A second start on a waiting entry would queue it twice, two runs writing one folder.
   function alreadyThere(id: string): boolean {
     const status = store.get(id)?.status;
-    return status === "done" || status === "downloading";
+    return (
+      status === "done" ||
+      status === "downloading" ||
+      status === "queued" ||
+      status === "processing"
+    );
   }
 
   // The renderer only ever sends a handle, never a url to go and fetch.
