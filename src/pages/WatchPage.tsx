@@ -170,9 +170,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
         />
       );
     }
-    if (ready) return null;
-    if (stream.loading || stream.playable)
-      return <PlayerStatus note="Recherche d'une source…" busy />;
+    if (ready || stream.loading || stream.playable) return null;
     return <PlayerStatus note={stream.error ?? "Lecture impossible"} onRetry={stream.retry} />;
   })();
 
@@ -223,7 +221,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
         }}
         onError={stream.onFailed}
       >
-        <BackButton onClick={leave} shown={status !== null} />
+        <BackButton onClick={leave} shown={!ready} />
         {status}
         {preview && !panel && next && (
           <NextPreview

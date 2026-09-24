@@ -34,7 +34,7 @@ export function NextPreview({ episode, cover, onPlay }: NextPreviewProps) {
             <span className="truncate">{episode.title || `Épisode ${String(episode.number)}`}</span>
           </span>
           {episode.description && (
-            <span className="mt-1.5 line-clamp-3 block text-xs leading-relaxed text-white/65">
+            <span className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-white/65">
               {episode.description}
             </span>
           )}

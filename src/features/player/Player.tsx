@@ -213,8 +213,9 @@ export function Player({
       if (current.current.url) latest.current.onError();
     });
 
+    // Above Artplayer's loading spinner (70), under its notices and settings (80 and up).
     const layer = document.createElement("div");
-    layer.className = `pointer-events-none absolute inset-0 z-50 ${OUTLINED_ICONS}`;
+    layer.className = `pointer-events-none absolute inset-0 z-[75] ${OUTLINED_ICONS}`;
     player.template.$player.append(layer);
     setOverlay(layer);
     setArt(player);
