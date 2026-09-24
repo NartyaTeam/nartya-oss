@@ -6,18 +6,20 @@ import { addAnime4kMenu, type Anime4kMenu } from "./anime4k-menu.ts";
 import type { Anime4kMode } from "./anime4k-modes.ts";
 import { Anime4kWarning } from "./Anime4kWarning.tsx";
 import { remember, browserStore } from "./bandwidth.ts";
+import { addBoostMenu } from "./boost-menu.ts";
+import { END_GUARD_S, addGestures } from "./gestures.ts";
 import { glideProgress } from "./glide.ts";
 import { hlsConfigFor } from "./hls-config.ts";
 import { showLanguageMenu } from "./language-menu.ts";
 import { OUTLINED_ICONS } from "./outlined-icons.ts";
 import { applyQuality, showQualityMenu } from "./quality-menu.ts";
+import { addSeek, type SeekHud } from "./seek-hud.ts";
+import { SeekIndicator } from "./SeekIndicator.tsx";
 import { hasWebGpu } from "./webgpu.ts";
 
-// Arrow keys seek ten seconds, but artplayer's own step would walk into the very end of
-// the episode and fire ended, which chains to the next one on a key repeat.
+// The arrows are ours: artplayer's own step walks into the end and fires ended.
 Artplayer.SEEK_STEP = 0;
-const SEEK_STEP_S = 10;
-const END_GUARD_S = 2;
+const SEEK_HUD_MS = 700;
 
 // Wrapped like artplayer's own icons, which is what scales them up in fullscreen; fill:none
 // inline because artplayer fills every svg of the player.
@@ -75,6 +77,7 @@ export function Player({
   const [art, setArt] = useState<Artplayer | null>(null);
   const [overlay, setOverlay] = useState<HTMLDivElement | null>(null);
   const [asking, setAsking] = useState<Anime4kMode | null>(null);
+  const [hud, setHud] = useState<SeekHud | null>(null);
   const upscaler = useRef<Anime4kMenu | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const requality = useRef<() => void>(() => undefined);
@@ -178,23 +181,8 @@ export function Player({
       ? addAnime4kMenu(player, store, setAsking, () => requality.current())
       : null;
 
-    const seekBy = (seconds: number): void => {
-      const { currentTime, duration } = player.video;
-      if (!Number.isFinite(duration) || duration <= 0) return;
-      player.currentTime = Math.min(Math.max(currentTime + seconds, 0), duration - END_GUARD_S);
-    };
-
-    const onKey = (event: KeyboardEvent): void => {
-      // Arrows belong to whatever is being typed in before they belong to the player.
-      const target = event.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable === true) return;
-      if (event.key === "ArrowRight") seekBy(SEEK_STEP_S);
-      else if (event.key === "ArrowLeft") seekBy(-SEEK_STEP_S);
-      else return;
-      event.preventDefault();
-    };
-    window.addEventListener("keydown", onKey);
+    const stopGestures = addGestures(player, (seconds) => setHud((held) => addSeek(held, seconds)));
+    const stopBoost = addBoostMenu(player, store);
 
     player.on("video:loadedmetadata", () => {
       current.current.loaded = true;
@@ -224,7 +212,8 @@ export function Player({
     setArt(player);
 
     return () => {
-      window.removeEventListener("keydown", onKey);
+      stopGestures();
+      stopBoost();
       upscaler.current?.stop();
       hlsRef.current?.destroy();
       hlsRef.current = null;
@@ -294,6 +283,12 @@ export function Player({
     if (control) control.style.display = hasNext ? "" : "none";
   }, [art, hasNext]);
 
+  useEffect(() => {
+    if (!hud) return;
+    const id = window.setTimeout(() => setHud(null), SEEK_HUD_MS);
+    return () => window.clearTimeout(id);
+  }, [hud]);
+
   // Artplayer offers no way to turn off its hover hints outside mobile, nor its notices.
   return (
     <>
@@ -301,6 +296,7 @@ export function Player({
         ref={box}
         className="h-full w-full bg-black [&_.art-notice]:!hidden [&_[class*=hint--]]:before:!hidden [&_[class*=hint--]]:after:!hidden"
       />
+      {overlay && createPortal(<SeekIndicator hud={hud} />, overlay)}
       {overlay && children && createPortal(children, overlay)}
       {asking && (
         <Anime4kWarning

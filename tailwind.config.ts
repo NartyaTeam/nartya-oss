@@ -29,6 +29,7 @@ export default {
       },
       keyframes: {
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
+        chevron: { "0%, 75%, 100%": { opacity: "0.2" }, "38%": { opacity: "1" } },
         "slide-up": {
           from: { opacity: "0", transform: "translateY(18px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -41,6 +42,7 @@ export default {
       },
       animation: {
         "fade-in": "fade-in 0.6s ease both",
+        chevron: "chevron 0.9s infinite",
         "slide-up": "slide-up 0.7s cubic-bezier(0.16,1,0.3,1) both",
         shimmer: "shimmer 1.6s infinite",
         "pop-in": "pop-in 0.14s cubic-bezier(0.16,1,0.3,1) both",
