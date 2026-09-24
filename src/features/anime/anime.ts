@@ -1,6 +1,6 @@
 import type { Api, ApiResult } from "../../lib/api.ts";
-import { parseAnimePage, parseSeasonEpisodes } from "./parse.ts";
-import type { AnimePage, SeasonEpisodes } from "./types.ts";
+import { parseAnimePage, parseSeasonEpisodes, parseSkips } from "./parse.ts";
+import type { AnimePage, SeasonEpisodes, Skips } from "./types.ts";
 
 const NOT_FOUND = "Cette fiche est introuvable.";
 
@@ -19,6 +19,19 @@ export function createAnime(api: Api) {
         `/anime/${encodeURIComponent(slug)}/seasons/${encodeURIComponent(seasonId)}/episodes?sources=v2`,
       );
       return answer.ok ? { ok: true, data: parseSeasonEpisodes(answer.data) } : answer;
+    },
+
+    // The season number is what IntroDB, the api's fallback, is indexed on.
+    skips: async (
+      slug: string,
+      seasonId: string,
+      episode: number,
+      seasonNumber: number,
+    ): Promise<ApiResult<Skips | null>> => {
+      const answer = await api.get<unknown>(
+        `/anime/${encodeURIComponent(slug)}/seasons/${encodeURIComponent(seasonId)}/skip?episode=${String(episode)}&snum=${String(seasonNumber)}`,
+      );
+      return answer.ok ? { ok: true, data: parseSkips(answer.data) } : answer;
     },
   };
 }

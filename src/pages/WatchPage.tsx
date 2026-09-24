@@ -5,14 +5,16 @@ import { DEFAULT_LANGUAGE, pickLanguage } from "../features/anime/languages.ts";
 import { availableLanguages, episodesIn } from "../features/anime/season.ts";
 import type { SeasonEpisodes } from "../features/anime/types.ts";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
-import { episodeLabel } from "../features/player/episode-label.ts";
+import { episodeLabel, seasonNumber } from "../features/player/episode-label.ts";
 import { BackButton } from "../features/player/BackButton.tsx";
+import { CreditsControls } from "../features/player/CreditsControls.tsx";
 import { EpisodePanel } from "../features/player/EpisodePanel.tsx";
 import { NextPreview } from "../features/player/NextPreview.tsx";
 import { Player } from "../features/player/Player.tsx";
 import { PlayerStatus } from "../features/player/PlayerStatus.tsx";
 import { episodeKey, type Progress, type SaveWhat } from "../features/player/progress.ts";
 import { settleStart, type StartAt } from "../features/player/resume.ts";
+import { useCredits } from "../features/player/useCredits.ts";
 import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
@@ -99,6 +101,16 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     };
   }, [slug, season?.id, episode?.number, lang]);
 
+  const seasonIndex = season ? seasons.indexOf(season) : 0;
+  const skipsKey = `skips:${slug}:${season?.id ?? ""}:${String(episode?.number ?? 0)}`;
+  const skips = useResource(store, skipsKey, () =>
+    season && episode
+      ? anime.skips(slug, season.id, episode.number, seasonNumber(season.name, seasonIndex))
+      : Promise.resolve({ ok: true as const, data: null }),
+  );
+  const credits = useCredits(watchKey, skips.data);
+  const seek = useRef<(seconds: number) => void>(() => undefined);
+
   const seen = useResource(store, `watched:${slug}:${userId}`, async () => ({
     ok: true as const,
     data: await progress.watchedIn(slug, userId),
@@ -129,7 +141,6 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   }
 
   const page = card.data;
-  const seasonIndex = season ? seasons.indexOf(season) : 0;
   const leave = (): void => {
     const state: unknown = window.history.state;
     const depth = typeof state === "object" && state !== null ? Reflect.get(state, "idx") : 0;
@@ -215,15 +226,30 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
             cover: page.images?.poster ?? page.anime.poster,
           };
           stream.onTime(seconds);
+          credits.report(seconds, duration);
         }}
         onEnded={() => {
           save.current(true);
-          if (next) goTo(next.number);
+          if (next && !credits.dismissed) goTo(next.number);
         }}
         onError={stream.onFailed}
+        seek={seek}
       >
         <BackButton onClick={leave} shown={!ready} />
         {status}
+        {ready && (
+          <CreditsControls
+            credits={credits.credits}
+            countdown={credits.countdown}
+            dismissed={credits.dismissed}
+            hasNext={next !== undefined}
+            onSkip={(to) => seek.current(to)}
+            onNext={() => {
+              if (next) goTo(next.number);
+            }}
+            onDismiss={credits.dismiss}
+          />
+        )}
         {preview && !panel && next && (
           <NextPreview
             episode={next}

@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fixElisions, parseAnimePage, parseEpisode, parseSeasonEpisodes } from "./parse.ts";
+import {
+  fixElisions,
+  parseAnimePage,
+  parseEpisode,
+  parseSeasonEpisodes,
+  parseSkips,
+} from "./parse.ts";
 
 const page = {
   anime: {
@@ -129,4 +135,20 @@ test("a source with no slot name has no handle, so it is dropped", () => {
     lecteurs: { vostfr: { "": { id: "token-a", key: "s1", label: "Source A", rank: 1 } } },
   };
   assert.equal(parseEpisode(nameless), null);
+});
+
+test("skip segments keep what makes sense, and nothing at all is null", () => {
+  assert.deepEqual(parseSkips({ intro: { start: 90, end: 180 }, outro: null }), {
+    intro: { start: 90, end: 180 },
+    outro: null,
+  });
+  assert.deepEqual(
+    parseSkips({ intro: { start: 90, end: 80 }, outro: { start: 1300, end: 1390 } }),
+    {
+      intro: null,
+      outro: { start: 1300, end: 1390 },
+    },
+  );
+  assert.equal(parseSkips({ intro: { start: "90", end: 180 } }), null);
+  assert.equal(parseSkips(null), null);
 });

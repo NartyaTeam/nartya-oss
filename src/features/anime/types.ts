@@ -71,3 +71,7 @@ export type SeasonEpisodes = {
   cover: string | null;
   episodes: Episode[];
 };
+
+export type Segment = { start: number; end: number };
+
+export type Skips = { intro: Segment | null; outro: Segment | null };

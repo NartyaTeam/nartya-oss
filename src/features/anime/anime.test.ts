@@ -48,3 +48,12 @@ test("a failure from the api passes through untouched", async () => {
   assert.deepEqual(await createAnime(api).page("one-piece"), failure);
   assert.deepEqual(await createAnime(api).episodes("one-piece", "saison1"), failure);
 });
+
+test("skip segments are asked for one episode, with its season number", async () => {
+  const { api, asked } = fakeApi({ ok: true, data: null });
+
+  const answer = await createAnime(api).skips("one piece", "saison 1", 12, 3);
+
+  assert.deepEqual(asked, ["/anime/one%20piece/seasons/saison%201/skip?episode=12&snum=3"]);
+  assert.deepEqual(answer, { ok: true, data: null });
+});

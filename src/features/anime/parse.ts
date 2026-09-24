@@ -7,6 +7,8 @@ import type {
   Episode,
   Season,
   SeasonEpisodes,
+  Segment,
+  Skips,
   Source,
 } from "./types.ts";
 
@@ -189,4 +191,18 @@ export function parseSeasonEpisodes(value: unknown): SeasonEpisodes {
     cover: text(bag?.["seasonCover"]) || null,
     episodes,
   };
+}
+
+function parseSegment(value: unknown): Segment | null {
+  const bag = bagOf(value);
+  const start = count(bag?.["start"]);
+  const end = count(bag?.["end"]);
+  return start !== null && end !== null && start >= 0 && end > start ? { start, end } : null;
+}
+
+export function parseSkips(value: unknown): Skips | null {
+  const bag = bagOf(value);
+  const intro = parseSegment(bag?.["intro"]);
+  const outro = parseSegment(bag?.["outro"]);
+  return intro || outro ? { intro, outro } : null;
 }

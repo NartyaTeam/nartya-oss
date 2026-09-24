@@ -1,11 +1,12 @@
 import Artplayer from "artplayer";
 import Hls from "hls.js";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { addAnime4kMenu, type Anime4kMenu } from "./anime4k-menu.ts";
 import type { Anime4kMode } from "./anime4k-modes.ts";
 import { Anime4kWarning } from "./Anime4kWarning.tsx";
 import { remember, browserStore } from "./bandwidth.ts";
+import { glideProgress } from "./glide.ts";
 import { hlsConfigFor } from "./hls-config.ts";
 import { showLanguageMenu } from "./language-menu.ts";
 import { OUTLINED_ICONS } from "./outlined-icons.ts";
@@ -46,6 +47,7 @@ type PlayerProps = {
   onTime: (seconds: number, duration: number) => void;
   onEnded: () => void;
   onError: () => void;
+  seek: MutableRefObject<(seconds: number) => void>;
   children?: ReactNode;
 };
 
@@ -66,6 +68,7 @@ export function Player({
   onTime,
   onEnded,
   onError,
+  seek,
   children,
 }: PlayerProps) {
   const box = useRef<HTMLDivElement>(null);
@@ -266,6 +269,16 @@ export function Player({
       latest.current.onLanguage(lang),
     );
   }, [art, offered, language, country]);
+
+  useEffect(() => {
+    if (!art) return;
+    seek.current = (seconds) => {
+      const { duration } = art.video;
+      if (!(duration > 0)) return;
+      glideProgress(art);
+      art.currentTime = Math.min(seconds, duration - END_GUARD_S);
+    };
+  }, [art, seek]);
 
   useEffect(() => {
     const label = art?.controls["title"]?.querySelector("span");
