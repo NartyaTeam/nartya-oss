@@ -12,7 +12,8 @@ export type StoreParts = {
   keepMs?: number;
 };
 
-const PREFIX = "nartya:resource:";
+// Bumped when a parsed shape changes: an older build's value would be read as the new one.
+const PREFIX = "nartya:resource:v2:";
 const FRESH_MS = 10 * 60_000;
 const KEEP_MS = 7 * 24 * 60 * 60_000;
 

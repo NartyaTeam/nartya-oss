@@ -141,7 +141,7 @@ export function EpisodePanel({
                   className={`flex w-full items-center gap-6 px-7 py-6 text-left ${expanded ? "pb-4" : "hover:bg-white/5"}`}
                 >
                   <span className="min-w-[1.25em] shrink-0 text-center text-xl font-bold tabular-nums text-white/80">
-                    {episode.number}
+                    {episode.shown}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-lg font-semibold">
                     {episode.title || `Épisode ${String(episode.number)}`}

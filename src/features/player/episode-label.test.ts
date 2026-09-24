@@ -13,8 +13,20 @@ test("a season without a number takes its place in the list", () => {
 
 test("an episode reads as season, number and title", () => {
   assert.equal(
-    episodeLabel("Saison 1", 0, { number: 4, title: "Naissance de la matrice" }),
+    episodeLabel("Saison 1", 0, { shown: "4", title: "Naissance de la matrice" }),
     "S1 EP4 — Naissance de la matrice",
   );
-  assert.equal(episodeLabel("Saison 1", 0, { number: 4, title: "" }), "S1 EP4");
+  assert.equal(episodeLabel("Saison 1", 0, { shown: "4", title: "" }), "S1 EP4");
+});
+
+test("a film reads as its season and its name, without a made up number", () => {
+  assert.equal(episodeLabel("Films", 0, { shown: "13", title: "Z" }), "Films — Z");
+  assert.equal(episodeLabel("OAV", 2, { shown: "1", title: "Épisode 1" }), "OAV — Épisode 1");
+});
+
+test("a side season reads as its name too", () => {
+  assert.equal(
+    episodeLabel("Fan Letter", 3, { shown: "1", title: "Épisode 1" }),
+    "Fan Letter — Épisode 1",
+  );
 });

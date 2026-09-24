@@ -61,7 +61,8 @@ export type Episode = {
   thumbnail: string | null;
   airDate: string | null;
   length: number | null;
-  special: boolean;
+  // What stands for the number on screen: "12", "SP", or a film's place in its list.
+  shown: string;
   sources: Record<string, Source[]>;
 };
 

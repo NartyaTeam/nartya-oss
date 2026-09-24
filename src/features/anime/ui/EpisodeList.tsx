@@ -6,11 +6,6 @@ import { languageLabel } from "../languages.ts";
 import type { Episode } from "../types.ts";
 import { Flag } from "./Flag.tsx";
 
-// Numbers can be fractional: a named special sits between two episodes rather than taking
-// a number of its own.
-const displayNumber = (episode: Episode): string =>
-  episode.special ? "SP" : String(Math.round(episode.number * 1000) / 1000);
-
 type RowProps = {
   episode: Episode;
   lang: string;
@@ -48,7 +43,7 @@ function EpisodeRow({ episode, lang, country, poster, to, watched }: RowProps) {
           </div>
         )}
         <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-bold backdrop-blur-sm">
-          {displayNumber(episode)}
+          {episode.shown}
         </span>
         <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[0.62rem] font-bold backdrop-blur-sm">
           <Flag code={flagFor(lang, country)} />

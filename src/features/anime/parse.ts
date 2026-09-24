@@ -11,6 +11,7 @@ import type {
   Skips,
   Source,
 } from "./types.ts";
+import { seasonKind } from "./season-groups.ts";
 
 type Bag = Record<string, unknown>;
 
@@ -169,27 +170,46 @@ export function parseEpisode(value: unknown): Episode | null {
     thumbnail: text(bag["thumbnail"]) || text(bag["image"]) || null,
     airDate: text(bag["airDate"]) || null,
     length: count(bag["length"]),
-    special: bag["isSpecial"] === true,
+    shown: bag["isSpecial"] === true ? "SP" : String(Math.round(number * 1000) / 1000),
     sources,
+  };
+}
+
+// The api dresses films, OAV and side seasons in the main series' episodes, one by one: the
+// first film comes out as episode 1 of the anime. Only the name anime-sama gives them is theirs.
+function asWork(entry: unknown, episode: Episode, place: number, noun: string): Episode {
+  const shown = String(place);
+  return {
+    ...episode,
+    shown,
+    title: sentence(bagOf(entry)?.["label"]) ?? `${noun} ${shown}`,
+    description: null,
+    thumbnail: null,
+    airDate: null,
+    length: null,
   };
 }
 
 export function parseSeasonEpisodes(value: unknown): SeasonEpisodes {
   const bag = bagOf(value);
-  const episodes = Array.isArray(bag?.["episodes"])
-    ? bag["episodes"].flatMap((entry) => {
-        const episode = parseEpisode(entry);
-        return episode ? [episode] : [];
-      })
-    : [];
+  const name = text(bag?.["seasonName"]) || null;
+  const kind = name ? seasonKind(name) : "main";
+  const works = kind === "films" || kind === "specials" || kind === "other";
+  const entries: unknown[] = Array.isArray(bag?.["episodes"]) ? bag["episodes"] : [];
+  const episodes = entries.flatMap((entry) => {
+    const episode = parseEpisode(entry);
+    return episode ? [{ entry, episode }] : [];
+  });
 
   return {
-    name: text(bag?.["seasonName"]) || null,
+    name,
     // The api sends this only when it is french; the page prefers it over the card's own
     // synopsis, and an english one made the page switch language as the season loaded.
     description: sentence(bag?.["seasonDescription"]),
     cover: text(bag?.["seasonCover"]) || null,
-    episodes,
+    episodes: episodes.map(({ entry, episode }, i) =>
+      works ? asWork(entry, episode, i + 1, kind === "films" ? "Film" : "Épisode") : episode,
+    ),
   };
 }
 

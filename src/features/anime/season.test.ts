@@ -19,7 +19,7 @@ const episode = (number: number, sources: Record<string, Source[]>): Episode => 
   thumbnail: null,
   airDate: null,
   length: null,
-  special: false,
+  shown: String(number),
   sources,
 });
 

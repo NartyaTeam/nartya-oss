@@ -2,20 +2,20 @@ import type { Season } from "./types.ts";
 
 export type SeasonGroup = { label: string; seasons: Season[] };
 
-type Kind = "main" | "kai" | "films" | "specials" | "other";
+export type SeasonKind = "main" | "kai" | "films" | "specials" | "other";
 
-const LABELS: Record<Kind, string> = {
+const LABELS: Record<SeasonKind, string> = {
   main: "Saisons",
   kai: "Kai",
   films: "Films",
   specials: "OAV & spéciaux",
   other: "Autres",
 };
-const ORDER: Kind[] = ["main", "kai", "films", "specials", "other"];
+const ORDER: SeasonKind[] = ["main", "kai", "films", "specials", "other"];
 
 const NUMBERED = /\b(?:saison|saga|partie|version)\s*(\d+(?:[.,]\d+)?)/i;
 
-function kindOf(name: string): Kind {
+export function seasonKind(name: string): SeasonKind {
   const lower = name.trim().toLowerCase();
   if (/^kai\b/.test(lower)) return "kai";
   if (/^films?\b/.test(lower)) return "films";
@@ -33,7 +33,7 @@ function numberOf(name: string): number {
 
 export function groupSeasons(seasons: Season[]): SeasonGroup[] {
   return ORDER.map((kind) => {
-    const inGroup = seasons.filter((season) => kindOf(season.name) === kind);
+    const inGroup = seasons.filter((season) => seasonKind(season.name) === kind);
     if (kind === "main" || kind === "kai") {
       inGroup.sort((a, b) => numberOf(a.name) - numberOf(b.name));
     }

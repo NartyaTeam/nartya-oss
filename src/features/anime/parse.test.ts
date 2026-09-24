@@ -115,7 +115,7 @@ test("a season synopsis the api withheld leaves the card's own in place", () => 
 
 test("a named special keeps its title rather than a number", () => {
   const special = parseEpisode({ ...sealed, title: "OAV spécial", isSpecial: true });
-  assert.equal(special?.special, true);
+  assert.equal(special?.shown, "SP");
   assert.equal(special?.title, "OAV spécial");
 });
 
@@ -151,4 +151,47 @@ test("skip segments keep what makes sense, and nothing at all is null", () => {
   );
   assert.equal(parseSkips({ intro: { start: "90", end: 180 } }), null);
   assert.equal(parseSkips(null), null);
+});
+
+test("films take their own name and their place, never the series' episodes", () => {
+  const films = parseSeasonEpisodes({
+    seasonName: "Films",
+    episodes: [
+      { ...sealed, episode: 0.001, title: "Je suis Luffy !", label: "Le Film", isSpecial: true },
+      { ...sealed, episode: 1.002, title: "Zoro", description: "Kobby…", thumbnail: "t.jpg" },
+    ],
+  });
+  assert.deepEqual(
+    films.episodes.map(({ number, shown, title, description, thumbnail }) => ({
+      number,
+      shown,
+      title,
+      description,
+      thumbnail,
+    })),
+    [
+      { number: 0.001, shown: "1", title: "Le Film", description: null, thumbnail: null },
+      { number: 1.002, shown: "2", title: "Film 2", description: null, thumbnail: null },
+    ],
+  );
+});
+
+test("an OAV season without names counts its episodes", () => {
+  const oav = parseSeasonEpisodes({ seasonName: "OAV", episodes: [{ ...sealed, title: "Autre" }] });
+  assert.equal(oav.episodes[0]?.title, "Épisode 1");
+});
+
+test("an episode of a regular season keeps what the api found for it", () => {
+  const season = parseSeasonEpisodes({ seasonName: "Saison 1", episodes: [sealed] });
+  assert.equal(season.episodes[0]?.shown, "1");
+  assert.equal(season.episodes[0]?.title, sealed.title);
+});
+
+test("a side season is not dressed in the series' episodes either", () => {
+  const log = parseSeasonEpisodes({
+    seasonName: "One Piece Log: Fish-Man Island Saga",
+    episodes: [{ ...sealed, title: "Je suis Luffy !" }],
+  });
+  assert.equal(log.episodes[0]?.title, "Épisode 1");
+  assert.equal(log.episodes[0]?.description, null);
 });

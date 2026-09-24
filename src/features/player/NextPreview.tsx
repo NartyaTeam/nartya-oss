@@ -30,7 +30,7 @@ export function NextPreview({ episode, cover, onPlay }: NextPreviewProps) {
         </span>
         <span className="min-w-0 pt-0.5">
           <span className="flex items-baseline gap-2 font-bold">
-            <span className="shrink-0">{episode.number}</span>
+            <span className="shrink-0">{episode.shown}</span>
             <span className="truncate">{episode.title || `Épisode ${String(episode.number)}`}</span>
           </span>
           {episode.description && (
