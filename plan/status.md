@@ -3,7 +3,7 @@
 Where the rewrite stands, updated at the end of each working session. The phases themselves
 are in [migration.md](migration.md), the reasons in [journal.md](journal.md).
 
-Last updated: 2026-09-24.
+Last updated: 2026-09-25.
 
 ## Done
 
@@ -40,12 +40,19 @@ Last updated: 2026-09-24.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Slice 5, downloads**, on top of the download manager already ported to the main process.
+1. **Slice 5, downloads**: the anime page and the downloads page are done; offline playback
+   in the player is left.
 2. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
 3. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
    skip settings (auto chaining, skip button, auto skip) and the audio boost.
 4. Contributor setup: the schema published (phase 5), demo catalog data (D12).
 5. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
+   The packaged app will open the previous app's data folder (`%APPDATA%
+artya`), whose
+   downloads index is an electron-store file (`{ items, root }`), not ours: it needs a
+   migration, and removing an entry must never delete a folder this code did not create.
+   Development runs in `nartya-dev` since 2026-09-25, after a dev build deleted a video the
+   installed app had downloaded.
 6. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
    on Linux drivers Chromium blocklists, which the previous app forced on. Cast and content
    warnings in the player.
