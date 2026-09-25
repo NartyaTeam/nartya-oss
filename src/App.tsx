@@ -9,6 +9,7 @@ import { getPlatform } from "./lib/platform.ts";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { NewPasswordPage } from "./pages/NewPasswordPage.tsx";
 import type { ResourceStore } from "./lib/resource-store.ts";
+import type { Probe } from "./features/network/store.ts";
 import { SignedIn } from "./SignedIn.tsx";
 
 // Without the desktop bridge the provider sends the browser back to this page, code in the
@@ -39,6 +40,7 @@ export type AppParts = {
   anime: Anime | null;
   progress: Progress;
   store: ResourceStore;
+  reachable: Probe | null;
 };
 
 function Screen({ children }: { children: React.ReactNode }) {
@@ -50,7 +52,7 @@ function Screen({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function App({ client, flows, catalog, anime, progress, store }: AppParts) {
+export function App({ client, flows, catalog, anime, progress, store, reachable }: AppParts) {
   const { session, profile, ready, watch } = useSession();
   const [recovering, setRecovering] = useState(false);
 
@@ -96,6 +98,7 @@ export function App({ client, flows, catalog, anime, progress, store }: AppParts
         anime={anime}
         progress={progress}
         store={store}
+        reachable={reachable}
         onSignOut={() => void flows.signOut()}
       />
     </Screen>

@@ -52,6 +52,7 @@ function start(): JSX.Element {
       anime={api ? createAnime(api) : null}
       progress={createProgress(client)}
       store={createResourceStore()}
+      reachable={api ? api.reachable : null}
     />
   );
 }

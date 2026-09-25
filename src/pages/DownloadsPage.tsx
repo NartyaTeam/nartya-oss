@@ -1,4 +1,4 @@
-import { Eraser, FolderOpen, HardDrive } from "lucide-react";
+import { Eraser, FolderOpen, HardDrive, WifiOff } from "lucide-react";
 import { useState } from "react";
 import type { EpisodeDownload } from "../../shared/downloads.ts";
 import type { Anime } from "../features/anime/anime.ts";
@@ -6,6 +6,7 @@ import { DownloadGroup } from "../features/downloads/DownloadGroup.tsx";
 import { formatSize, groupLibrary, isFailed } from "../features/downloads/library.ts";
 import { downloadOrder } from "../features/downloads/prepare.ts";
 import { useDownloads } from "../features/downloads/store.ts";
+import { useNetwork } from "../features/network/store.ts";
 import { AUTO } from "../features/player/sources.ts";
 import { getPlatform } from "../lib/platform.ts";
 import { Empty } from "../ui/Empty.tsx";
@@ -31,6 +32,7 @@ export function DownloadsPage({ anime }: { anime: Anime }) {
   const { items, preparing, failed, start, cancel, remove } = useDownloads();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const bridge = getPlatform()?.downloads;
+  const offline = useNetwork((state) => state.checked && !state.online);
 
   const groups = groupLibrary(Object.values(items));
   const bytes = groups.reduce((sum, group) => sum + group.bytes, 0);
@@ -73,9 +75,16 @@ export function DownloadsPage({ anime }: { anime: Anime }) {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-black">Téléchargements</h1>
-          <p className="mt-1 text-sm text-muted">
-            Tes épisodes disponibles hors ligne, sur cet appareil.
-          </p>
+          {offline ? (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-300">
+              <WifiOff size={14} />
+              Hors ligne : seuls tes épisodes téléchargés sont disponibles.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted">
+              Tes épisodes disponibles hors ligne, sur cet appareil.
+            </p>
+          )}
         </div>
         {bridge && (
           <div className="flex flex-wrap items-center gap-2">

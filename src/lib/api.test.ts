@@ -123,3 +123,14 @@ test("a refused session says so, rather than blaming the catalogue", async () =>
   assert.equal(result.ok === false && result.outdated, false);
   assert.equal(calls(), 1);
 });
+
+test("the api answering at all, even with an error, means the network is up", async () => {
+  assert.equal(await apiWith([{ status: 200 }]).api.reachable(), true);
+  assert.equal(await apiWith([{ status: 503 }]).api.reachable(), true);
+});
+
+test("a request that never reaches the api means no network", async () => {
+  const { api, asked } = apiWith([{ status: 0, throws: true }]);
+  assert.equal(await api.reachable(), false);
+  assert.equal(asked[0]?.url, "https://api.example.test/health");
+});

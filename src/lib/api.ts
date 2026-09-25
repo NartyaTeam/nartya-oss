@@ -11,6 +11,7 @@ export type ApiParts = {
 };
 
 const TIMEOUT_MS = 15_000;
+const PROBE_TIMEOUT_MS = 7_500;
 const RETRIES = 2;
 const BACKOFF_MS = 400;
 const OUTDATED = 426;
@@ -102,7 +103,20 @@ export function createApi(parts: ApiParts) {
     }
   }
 
-  return { get };
+  // Any answer at all means the network is there, whatever the api makes of the request.
+  async function reachable(): Promise<boolean> {
+    try {
+      await fetcher(`${baseUrl}/health`, {
+        signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+        cache: "no-store",
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return { get, reachable };
 }
 
 function pick(status: number): string {

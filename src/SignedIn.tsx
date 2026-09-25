@@ -4,6 +4,8 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
 import { useDownloads } from "./features/downloads/store.ts";
+import { OfflineRedirect } from "./features/network/OfflineRedirect.tsx";
+import { useNetwork, type Probe } from "./features/network/store.ts";
 import { activeTier, downloadSlots } from "./features/session/premium.ts";
 import { getPlatform } from "./lib/platform.ts";
 import type { Profile } from "./features/session/profile.ts";
@@ -25,6 +27,7 @@ type SignedInProps = {
   anime: Anime | null;
   progress: Progress;
   store: ResourceStore;
+  reachable: Probe | null;
   onSignOut: () => void;
 };
 
@@ -37,9 +40,11 @@ export function SignedIn({
   anime,
   progress,
   store,
+  reachable,
   onSignOut,
 }: SignedInProps) {
   useEffect(() => useDownloads.getState().watch(), []);
+  useEffect(() => (reachable ? useNetwork.getState().watch(reachable) : undefined), [reachable]);
   const slots = downloadSlots(activeTier(profile, Date.now()));
   useEffect(() => {
     void getPlatform()?.downloads.setSlots(slots);
@@ -69,6 +74,7 @@ export function SignedIn({
   // The player takes the whole window, outside the shell.
   return (
     <HashRouter>
+      <OfflineRedirect />
       <Routes>
         <Route
           path="/watch/:slug"
