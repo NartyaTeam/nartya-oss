@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { DownloadItem, EpisodeDownload } from "../../../shared/downloads.ts";
-import { formatSize, groupLibrary, offlineCopy } from "./library.ts";
+import { formatSize, groupLibrary, nextDownloaded, offlineCopy } from "./library.ts";
 
 const episode = (patch: Partial<EpisodeDownload>): EpisodeDownload => ({
   type: "episode",
@@ -113,4 +113,27 @@ test("a progressive download with no recorded file is the mp4", () => {
     file: "video.mp4",
     isHls: false,
   });
+});
+
+test("the next downloaded episode skips the ones not downloaded", () => {
+  const playing = episode({ ep: 3 });
+  const items = [
+    episode({ ep: 2 }),
+    playing,
+    episode({ ep: 7 }),
+    episode({ ep: 5 }),
+    episode({ ep: 4, status: "downloading" }),
+  ];
+  assert.equal(nextDownloaded(items, playing)?.ep, 5);
+});
+
+test("the next downloaded episode stays in the same season and language", () => {
+  const playing = episode({ ep: 1 });
+  const items = [
+    playing,
+    episode({ ep: 2, seasonId: "saison2" }),
+    episode({ ep: 2, lang: "vostfr", id: "a::saison1::2::vostfr" }),
+    episode({ ep: 2, slug: "b" }),
+  ];
+  assert.equal(nextDownloaded(items, playing), undefined);
 });

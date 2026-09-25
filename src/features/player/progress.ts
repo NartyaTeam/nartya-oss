@@ -4,6 +4,7 @@ export const COMPLETION_THRESHOLD = 90;
 // Two saves closer than this are one: a flurry of pause and play would otherwise flood
 // the table. A forced save, on an episode change or on the way out, ignores it.
 export const MIN_SAVE_GAP_MS = 5_000;
+export const SAVE_EVERY_MS = 30_000;
 
 export type Watched = { percent: number; completed: boolean };
 export type Resume = {

@@ -55,6 +55,21 @@ export function groupLibrary(items: DownloadItem[]): Group[] {
   return groups.sort((a, b) => newest(b) - newest(a));
 }
 
+// Downloads are picked one by one, so the next episode may be further along the season.
+export function nextDownloaded(
+  items: DownloadItem[],
+  after: EpisodeDownload,
+): EpisodeDownload | undefined {
+  let best: EpisodeDownload | undefined;
+  for (const item of items) {
+    if (item.type !== "episode" || item.status !== "done") continue;
+    if (item.slug !== after.slug || item.seasonId !== after.seasonId) continue;
+    if (item.lang !== after.lang || item.ep <= after.ep) continue;
+    if (!best || item.ep < best.ep) best = item;
+  }
+  return best;
+}
+
 export function formatSize(bytes: number): string {
   if (!bytes) return "—";
   const megabytes = bytes / (1024 * 1024);

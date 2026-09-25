@@ -42,6 +42,7 @@ type PlayerProps = {
   onNext: () => void;
   onNextHover: (hovered: boolean) => void;
   onEpisodes: (hovered: boolean) => void;
+  hasEpisodes: boolean;
   languages: string[];
   language: string;
   country: string | null;
@@ -63,6 +64,7 @@ export function Player({
   onNext,
   onNextHover,
   onEpisodes,
+  hasEpisodes,
   languages,
   language,
   country,
@@ -284,6 +286,11 @@ export function Player({
     const control = art?.controls["next"];
     if (control) control.style.display = hasNext ? "" : "none";
   }, [art, hasNext]);
+
+  useEffect(() => {
+    const control = art?.controls["episodes"];
+    if (control) control.style.display = hasEpisodes ? "" : "none";
+  }, [art, hasEpisodes]);
 
   useEffect(() => {
     if (!hud) return;

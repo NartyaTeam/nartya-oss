@@ -12,9 +12,15 @@ import { BackButton } from "../features/player/BackButton.tsx";
 import { CreditsControls } from "../features/player/CreditsControls.tsx";
 import { EpisodePanel } from "../features/player/EpisodePanel.tsx";
 import { NextPreview } from "../features/player/NextPreview.tsx";
+import { OfflinePlayer } from "../features/player/OfflinePlayer.tsx";
 import { Player } from "../features/player/Player.tsx";
 import { PlayerStatus } from "../features/player/PlayerStatus.tsx";
-import { episodeKey, type Progress, type SaveWhat } from "../features/player/progress.ts";
+import {
+  episodeKey,
+  SAVE_EVERY_MS,
+  type Progress,
+  type SaveWhat,
+} from "../features/player/progress.ts";
 import { settleStart, type StartAt } from "../features/player/resume.ts";
 import { useCredits } from "../features/player/useCredits.ts";
 import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
@@ -35,6 +41,11 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const asked = Number(params.get("ep"));
+  const requested = useDownloads(
+    (state) =>
+      state.items[downloadId(slug, params.get("saison") ?? "", asked, params.get("lang") ?? "")],
+  );
 
   const card = useResource(store, `anime:${slug}`, () => anime.page(slug), { persist: true });
   const seasons = card.data?.seasons ?? [];
@@ -51,7 +62,6 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const all = list.data?.episodes ?? [];
   const lang = pickLanguage(availableLanguages(all), params.get("lang") ?? DEFAULT_LANGUAGE);
   const playable = episodesIn(all, lang);
-  const asked = Number(params.get("ep"));
   const index = Math.max(
     0,
     playable.findIndex((entry) => entry.number === asked),
@@ -98,7 +108,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   };
 
   useEffect(() => {
-    const id = setInterval(() => save.current(false), 30_000);
+    const id = setInterval(() => save.current(false), SAVE_EVERY_MS);
     const onLeaving = (): void => save.current(true);
     window.addEventListener("pagehide", onLeaving);
     return () => {
@@ -154,6 +164,20 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     if (typeof depth === "number" && depth > 0) navigate(-1);
     else navigate(`/anime/${encodeURIComponent(slug)}`, { replace: true });
   };
+
+  // The api out of reach, from no network or its own failure: a download still plays.
+  const stranded = (!page && card.error !== null) || (list.error !== null && all.length === 0);
+  if (stranded && requested?.type === "episode" && requested.status === "done") {
+    return (
+      <OfflinePlayer
+        item={requested}
+        progress={progress}
+        userId={userId}
+        onLeave={leave}
+        onPick={(next) => goTo(next.ep, next.seasonId)}
+      />
+    );
+  }
 
   if (!page) {
     return (
@@ -215,6 +239,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
         }}
         onNextHover={setPreview}
         onEpisodes={hoverPanel}
+        hasEpisodes
         languages={
           episode
             ? Object.keys(episode.sources).filter(

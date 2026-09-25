@@ -33,6 +33,9 @@ Last updated: 2026-09-25.
   series' episodes the api fills them with.
 - **Slice 5, downloads** (2026-09-25). From the anime page, a downloads page grouped by anime,
   and a downloaded episode played from disk, streamed instead when its file is gone or fails.
+- **Offline** (2026-09-25). The app opens on the stored session with no network, moves to
+  the downloads page once the api has missed three probes, and plays a download from its
+  record when the api is out of reach, chaining to the next downloaded episode.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
@@ -42,24 +45,20 @@ Last updated: 2026-09-25.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Offline launch.** Downloads play from disk (2026-09-25), but with no network an expired
-   session lands on the login page after about 30 seconds, and the player needs the api for
-   the episode list. Keep the stored session, open on the downloads page, play from the record.
-2. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
-3. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
+1. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
+2. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
    skip settings (auto chaining, skip button, auto skip) and the audio boost.
-4. Contributor setup: the schema published (phase 5), demo catalog data (D12).
-5. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
-   The packaged app will open the previous app's data folder (`%APPDATA%
-artya`), whose
+3. Contributor setup: the schema published (phase 5), demo catalog data (D12).
+4. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
+   The packaged app will open the previous app's data folder (`%APPDATA%\nartya`), whose
    downloads index is an electron-store file (`{ items, root }`), not ours: it needs a
    migration, and removing an entry must never delete a folder this code did not create.
    Development runs in `nartya-dev` since 2026-09-25, after a dev build deleted a video the
    installed app had downloaded.
-6. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
+5. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
    on Linux drivers Chromium blocklists, which the previous app forced on. Cast and content
    warnings in the player.
-7. **In `nartya-api-v2`**, not done here: it fills films, OAV and side seasons with the main
+6. **In `nartya-api-v2`**, not done here: it fills films, OAV and side seasons with the main
    series' episodes, which the client now hides; and a native title reduced to a digit
    ("第2期" to "2") matched "Ranma 1/2", fixed locally but not committed.
 
