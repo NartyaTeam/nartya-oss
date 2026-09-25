@@ -4,7 +4,7 @@ import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import type { ProfileSource } from "./profile.ts";
 import { useSession } from "./store.ts";
 
-type Emit = (session: Session | null) => void;
+type Emit = (session: Session | null, event?: string) => void;
 
 function sessionFor(id: string): Session {
   return { access_token: "token", user: { id } } as Session;
@@ -17,19 +17,23 @@ function fakeClient() {
   const client = {
     auth: {
       onAuthStateChange: (handler: (event: string, session: Session | null) => void) => {
-        emit = (session) => handler("INITIAL_SESSION", session);
+        emit = (session, event = "INITIAL_SESSION") => handler(event, session);
         return {
           data: { subscription: { unsubscribe: () => void (state.unsubscribes += 1) } },
         };
       },
       signOut: async () => {
         state.signOuts += 1;
-        emit(null);
+        emit(null, "SIGNED_OUT");
       },
     },
   } as unknown as SupabaseClient;
 
-  return { client, state, emit: (session: Session | null) => emit(session) };
+  return {
+    client,
+    state,
+    emit: (session: Session | null, event?: string) => emit(session, event),
+  };
 }
 
 function fakeProfiles(rows: Record<string, unknown>, gone = false) {
@@ -115,5 +119,53 @@ test("an account deleted on the server is signed out here", async () => {
   assert.equal(state.signOuts, 1);
   assert.equal(useSession.getState().session, null);
   assert.equal(useSession.getState().profile, null);
+  stop();
+});
+
+test("a stored session opens the app before the client answers", () => {
+  fresh();
+  const { client } = fakeClient();
+  const stop = useSession.getState().watch(client, fakeProfiles({}).source, () => sessionFor("u1"));
+
+  assert.equal(useSession.getState().ready, true);
+  assert.equal(useSession.getState().session?.user.id, "u1");
+  stop();
+});
+
+test("with no network, a session auth-js still keeps is not signed out", async () => {
+  fresh();
+  const { client, emit } = fakeClient();
+  const stop = useSession.getState().watch(client, fakeProfiles({}).source, () => sessionFor("u1"));
+
+  emit(null);
+  await settled();
+
+  assert.equal(useSession.getState().session?.user.id, "u1");
+  stop();
+});
+
+test("a stored session auth-js dropped at start is signed out", async () => {
+  fresh();
+  const { client, emit } = fakeClient();
+  let kept: Session | null = sessionFor("u1");
+  const stop = useSession.getState().watch(client, fakeProfiles({}).source, () => kept);
+
+  kept = null;
+  emit(null);
+  await settled();
+
+  assert.equal(useSession.getState().session, null);
+  stop();
+});
+
+test("signing out is never mistaken for a lost network", async () => {
+  fresh();
+  const { client, emit } = fakeClient();
+  const stop = useSession.getState().watch(client, fakeProfiles({}).source, () => sessionFor("u1"));
+
+  emit(null, "SIGNED_OUT");
+  await settled();
+
+  assert.equal(useSession.getState().session, null);
   stop();
 });

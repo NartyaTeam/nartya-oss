@@ -1,12 +1,17 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { loadProfile, supabaseProfiles, type Profile, type ProfileSource } from "./profile.ts";
+import { readStoredSession } from "./stored.ts";
 
 export type SessionState = {
   session: Session | null;
   profile: Profile | null;
   ready: boolean;
-  watch: (client: SupabaseClient, profiles?: ProfileSource) => () => void;
+  watch: (
+    client: SupabaseClient,
+    profiles?: ProfileSource,
+    stored?: () => Session | null,
+  ) => () => void;
 };
 
 export const useSession = create<SessionState>((set, get) => ({
@@ -14,7 +19,7 @@ export const useSession = create<SessionState>((set, get) => ({
   profile: null,
   ready: false,
 
-  watch: (client, profiles = supabaseProfiles(client)) => {
+  watch: (client, profiles = supabaseProfiles(client), stored = readStoredSession) => {
     async function hydrate(session: Session | null): Promise<void> {
       const previous = get().session;
       set({ session, ready: true });
@@ -33,9 +38,17 @@ export const useSession = create<SessionState>((set, get) => ({
       if (profile) set({ profile });
     }
 
-    // onAuthStateChange fires INITIAL_SESSION once the client holds its token, so the
-    // profile is never read before the request would carry it.
-    const { data } = client.auth.onAuthStateChange((_event, session) => void hydrate(session));
+    // The client only answers once it has tried to refresh the token, up to half a minute
+    // with no network. The profile still waits for it, so its request carries the token.
+    const seeded = stored();
+    if (seeded) set({ session: seeded, ready: true });
+
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      // A refresh that failed for want of network leaves the session stored; a revoked
+      // one is removed. Only the first means the viewer is still signed in.
+      if (!session && event === "INITIAL_SESSION" && stored()) return;
+      void hydrate(session);
+    });
     return () => data.subscription.unsubscribe();
   },
 }));
