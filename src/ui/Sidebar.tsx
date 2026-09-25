@@ -1,8 +1,9 @@
-import { Clapperboard, LogOut, Search, User } from "lucide-react";
+import { Clapperboard, Download, LogOut, Search, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import type { Profile } from "../features/session/profile.ts";
+import { getPlatform } from "../lib/platform.ts";
 
 const TRANS = "250ms cubic-bezier(0.4,0,0.2,1)";
 
@@ -10,6 +11,9 @@ const TABS: { to: string; icon: LucideIcon; label: string }[] = [
   { to: "/", icon: Clapperboard, label: "Animes" },
   { to: "/recherche", icon: Search, label: "Recherche" },
 ];
+
+// Downloads need the desktop app: in a browser the entry would lead nowhere useful.
+const DOWNLOADS = { to: "/telechargements", icon: Download, label: "Téléchargements" };
 
 type ItemProps = { to: string; icon: LucideIcon; label: string; expanded: boolean };
 
@@ -83,6 +87,7 @@ export function Sidebar({ profile, email, onSignOut }: SidebarProps) {
           {TABS.map((tab) => (
             <Item key={tab.to} {...tab} expanded={expanded} />
           ))}
+          {getPlatform() && <Item {...DOWNLOADS} expanded={expanded} />}
         </nav>
 
         <div className="app-no-drag flex items-center gap-3 border-t border-line/60 p-3">

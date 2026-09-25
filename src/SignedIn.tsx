@@ -11,6 +11,7 @@ import type { ResourceStore } from "./lib/resource-store.ts";
 import type { Progress } from "./features/player/progress.ts";
 import { AnimePage } from "./pages/AnimePage.tsx";
 import { CatalogHomePage } from "./pages/CatalogHomePage.tsx";
+import { DownloadsPage } from "./pages/DownloadsPage.tsx";
 import { GenrePage } from "./pages/GenrePage.tsx";
 import { SearchPage } from "./pages/SearchPage.tsx";
 import { WatchPage } from "./pages/WatchPage.tsx";
@@ -81,6 +82,7 @@ export function SignedIn({
             <Routes>
               <Route path="/" element={<CatalogHomePage catalog={catalog} store={store} />} />
               <Route path="/recherche" element={<SearchPage catalog={catalog} store={store} />} />
+              <Route path="/telechargements" element={<DownloadsPage anime={anime} />} />
               <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
               <Route
                 path="/anime/:slug"
