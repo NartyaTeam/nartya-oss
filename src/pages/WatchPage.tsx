@@ -5,6 +5,8 @@ import { DEFAULT_LANGUAGE, pickLanguage } from "../features/anime/languages.ts";
 import { availableLanguages, episodesIn } from "../features/anime/season.ts";
 import type { SeasonEpisodes } from "../features/anime/types.ts";
 import { AUTO_SOURCE } from "../features/anime/ui/SeasonPicker.tsx";
+import { offlineCopy } from "../features/downloads/library.ts";
+import { useDownloads } from "../features/downloads/store.ts";
 import { episodeLabel, seasonNumber } from "../features/player/episode-label.ts";
 import { BackButton } from "../features/player/BackButton.tsx";
 import { CreditsControls } from "../features/player/CreditsControls.tsx";
@@ -20,6 +22,7 @@ import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
 import { firstSeason } from "../features/anime/season-groups.ts";
+import { downloadId } from "../../shared/downloads.ts";
 
 // Lets the pointer cross the gap between the button and the panel.
 const PANEL_CLOSE_DELAY_MS = 120;
@@ -72,8 +75,12 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   // Unknown until the saved position is back: a player started before it begins at zero.
   const resumeAt = resume?.key === watchKey ? resume.seconds : null;
 
+  const downloaded = useDownloads(
+    (state) => state.items[downloadId(slug, season?.id ?? "", episode?.number ?? 0, lang)],
+  );
   const stream = useEpisodeStream(
     watchKey,
+    offlineCopy(downloaded),
     episode?.sources[lang] ?? [],
     params.get("src") ?? AUTO_SOURCE,
     resumeAt ?? 0,
@@ -191,7 +198,12 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
       <Player
         source={
           ready && stream.playable
-            ? { url: stream.playable.url, isHls: stream.playable.isHls, host: stream.host }
+            ? {
+                url: stream.playable.url,
+                isHls: stream.playable.isHls,
+                host: stream.host,
+                local: stream.local,
+              }
             : null
         }
         poster={episode?.thumbnail ?? page.images?.poster ?? null}

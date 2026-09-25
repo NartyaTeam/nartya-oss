@@ -18,6 +18,15 @@ export const isRunning = (item: DownloadItem): boolean => RUNNING.includes(item.
 export const isFailed = (item: DownloadItem): boolean =>
   item.status === "error" || item.status === "canceled";
 
+export type OfflineCopy = { id: string; file: string; isHls: boolean };
+
+// A progressive download records no file name: it is always video.mp4.
+export function offlineCopy(item: DownloadItem | undefined): OfflineCopy | null {
+  if (item?.status !== "done") return null;
+  const file = item.file ?? "video.mp4";
+  return { id: item.id, file, isHls: file.endsWith(".m3u8") };
+}
+
 // Anime most recently added first; inside one, seasons in turn and episodes in order.
 export function groupLibrary(items: DownloadItem[]): Group[] {
   const episodes = items.filter((item): item is EpisodeDownload => item.type === "episode");

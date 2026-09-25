@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { DownloadItem, EpisodeDownload } from "../../../shared/downloads.ts";
-import { formatSize, groupLibrary } from "./library.ts";
+import { formatSize, groupLibrary, offlineCopy } from "./library.ts";
 
 const episode = (patch: Partial<EpisodeDownload>): EpisodeDownload => ({
   type: "episode",
@@ -90,4 +90,27 @@ test("sizes read in megabytes, then gigabytes with a french decimal", () => {
   assert.equal(formatSize(0), "—");
   assert.equal(formatSize(350 * 1024 * 1024), "350 Mo");
   assert.equal(formatSize(1.5 * 1024 * 1024 * 1024), "1,5 Go");
+});
+
+test("only a finished download is played from disk", () => {
+  assert.equal(offlineCopy(undefined), null);
+  assert.equal(offlineCopy(episode({ status: "downloading" })), null);
+  assert.equal(offlineCopy(episode({ status: "error" })), null);
+  assert.notEqual(offlineCopy(episode({ status: "done" })), null);
+});
+
+test("a download that kept its segments plays through its playlist", () => {
+  assert.deepEqual(offlineCopy(episode({ file: "playlist.m3u8" })), {
+    id: "a::saison1::1::vf",
+    file: "playlist.m3u8",
+    isHls: true,
+  });
+});
+
+test("a progressive download with no recorded file is the mp4", () => {
+  assert.deepEqual(offlineCopy(episode({})), {
+    id: "a::saison1::1::vf",
+    file: "video.mp4",
+    isHls: false,
+  });
 });

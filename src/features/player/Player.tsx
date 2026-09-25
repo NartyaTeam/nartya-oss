@@ -31,7 +31,7 @@ const EPISODES_ICON = controlIcon(
   '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
 );
 
-export type PlayerSource = { url: string; isHls: boolean; host: string | null };
+export type PlayerSource = { url: string; isHls: boolean; host: string | null; local: boolean };
 
 type PlayerProps = {
   source: PlayerSource | null;
@@ -110,6 +110,7 @@ export function Player({
   const url = source?.url ?? null;
   const isHls = source?.isHls ?? false;
   const host = source?.host ?? null;
+  const local = source?.local ?? false;
   const offered = languages.join(",");
 
   useEffect(() => {
@@ -248,9 +249,10 @@ export function Player({
     // The rolling estimate, not one fragment's: it is what seeds the next launch.
     hls.on(Hls.Events.FRAG_LOADED, () => {
       const measured = hls.bandwidthEstimate;
-      if (Number.isFinite(measured)) remember(browserStore(), measured, host);
+      // A file read from disk says nothing about the network.
+      if (!local && Number.isFinite(measured)) remember(browserStore(), measured, host);
     });
-  }, [art, url, isHls, host]);
+  }, [art, url, isHls, host, local]);
 
   useEffect(() => {
     if (!art) return;

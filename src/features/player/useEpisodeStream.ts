@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Source } from "../anime/types.ts";
-import { resolveEpisode, type Playable } from "./resolve.ts";
+import type { OfflineCopy } from "../downloads/library.ts";
+import { openEpisode, type Playable } from "./resolve.ts";
 
 export type Stream = {
   playable: Playable | null;
   host: string | null;
+  local: boolean;
   loading: boolean;
   error: string | null;
   /** Where to pick up: the saved position, or where a source died mid episode. */
@@ -24,6 +26,9 @@ type StreamState = {
   carried: number;
 };
 
+// Disqualified like a source when the file fails to play, which hands over to streaming.
+const LOCAL_SLOT = "local";
+
 const idle = (key: string, carried: number): StreamState => ({
   key,
   playable: null,
@@ -38,6 +43,7 @@ const idle = (key: string, carried: number): StreamState => ({
 // what a previous one had disqualified says nothing about this one.
 export function useEpisodeStream(
   key: string,
+  copy: OfflineCopy | null,
   sources: Source[],
   preferred: string,
   resumeAt: number,
@@ -54,8 +60,8 @@ export function useEpisodeStream(
   const position = useRef({ key, seconds: 0 });
   const failing = useRef(false);
 
-  const latest = useRef({ sources, preferred });
-  latest.current = { sources, preferred };
+  const latest = useRef({ copy, sources, preferred });
+  latest.current = { copy, sources, preferred };
 
   useEffect(() => {
     let live = true;
@@ -65,9 +71,12 @@ export function useEpisodeStream(
     setState(idle(key, carried));
 
     const exclude = disqualified ? disqualified.split(",") : [];
-    void resolveEpisode(
-      latest.current.sources,
-      latest.current.preferred,
+    // Read when the episode opens: a download finishing mid watch does not swap the video.
+    const { copy: downloaded, sources: offered, preferred: picked } = latest.current;
+    void openEpisode(
+      exclude.includes(LOCAL_SLOT) ? null : downloaded,
+      offered,
+      picked,
       exclude,
       attempt > 0,
     ).then((won) => {
@@ -75,8 +84,8 @@ export function useEpisodeStream(
       setState({
         key,
         playable: won.ok ? won.value : null,
-        host: won.ok ? won.source.key : null,
-        slot: won.ok ? won.source.slot : null,
+        host: won.ok ? (won.source?.key ?? null) : null,
+        slot: won.ok ? (won.source?.slot ?? LOCAL_SLOT) : null,
         loading: false,
         error: won.ok ? null : won.error,
         carried,
@@ -102,6 +111,7 @@ export function useEpisodeStream(
   return {
     playable: state.key === key ? state.playable : null,
     host: state.host,
+    local: state.key === key && state.slot === LOCAL_SLOT,
     loading: state.key === key ? state.loading : true,
     error: state.key === key ? state.error : null,
     startAt: state.key === key && state.carried > 0 ? state.carried : resumeAt,

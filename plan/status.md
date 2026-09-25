@@ -31,6 +31,8 @@ Last updated: 2026-09-25.
   the rest), sorted by their number, and an anime opens on its first season. Flags next to
   each language. Films, OAV and side seasons show their own name and place instead of the
   series' episodes the api fills them with.
+- **Slice 5, downloads** (2026-09-25). From the anime page, a downloads page grouped by anime,
+  and a downloaded episode played from disk, streamed instead when its file is gone or fails.
 - **Sources, end to end with the api.** A picked source is a host key (`s1`), not an
   anime-sama column, and falls back to automatic when an episode lacks it. Only hosts the
   recipe knows are fetched. Every host checked against real episodes on 2026-09-23.
@@ -40,8 +42,9 @@ Last updated: 2026-09-25.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Slice 5, downloads**: the anime page and the downloads page are done; offline playback
-   in the player is left.
+1. **Offline launch.** Downloads play from disk (2026-09-25), but with no network an expired
+   session lands on the login page after about 30 seconds, and the player needs the api for
+   the episode list. Keep the stored session, open on the downloads page, play from the record.
 2. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
 3. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
    skip settings (auto chaining, skip button, auto skip) and the audio boost.

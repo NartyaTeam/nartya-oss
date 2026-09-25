@@ -1,5 +1,6 @@
 import { getPlatform } from "../../lib/platform.ts";
 import type { Source } from "../anime/types.ts";
+import type { OfflineCopy } from "../downloads/library.ts";
 import { orderSources, resolveHedged, type Won } from "./sources.ts";
 
 export type Playable = { url: string; isHls: boolean };
@@ -35,4 +36,26 @@ export function resolveEpisode(
       ? { ok: true as const, value: { url: outcome.url, isHls: outcome.isHls } }
       : { ok: false as const, error: outcome.error };
   });
+}
+
+export type Opened =
+  { ok: true; value: Playable; source: Source | null } | { ok: false; error: string };
+
+// A missing file is no failure: the record outlives a folder emptied by hand, and the
+// episode can still be streamed.
+export async function openEpisode(
+  copy: OfflineCopy | null,
+  sources: Source[],
+  preferred: string,
+  excluded: string[],
+  forceRefresh: boolean,
+): Promise<Opened> {
+  const bridge = getPlatform()?.downloads;
+  if (copy && bridge) {
+    const url = await withTimeout(bridge.localUrl(copy.id, copy.file), IPC_TIMEOUT_MS).catch(
+      () => null,
+    );
+    if (url) return { ok: true, value: { url, isHls: copy.isHls }, source: null };
+  }
+  return resolveEpisode(sources, preferred, excluded, forceRefresh);
 }

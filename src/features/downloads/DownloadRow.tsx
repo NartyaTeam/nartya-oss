@@ -3,12 +3,16 @@ import {
   CheckSquare,
   ImageOff,
   Loader2,
+  Play,
   RotateCcw,
   Square,
   Trash2,
   X,
 } from "lucide-react";
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { EpisodeDownload } from "../../../shared/downloads.ts";
+import { watchLink } from "../player/resume.ts";
 import { formatSize, isFailed, isRunning } from "./library.ts";
 import { useLocalImage } from "./useLocalImage.ts";
 
@@ -49,25 +53,10 @@ export function DownloadRow(props: DownloadRowProps) {
   const state = status(item, preparing, props.failed);
   const running = state.tone === "running";
   const season = item.seasonName ? `${item.seasonName} · ` : "";
+  const playable = state.tone === "done" && !picking;
 
-  return (
-    <div className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/[0.04]">
-      {picking && (
-        <button
-          type="button"
-          onClick={picking.toggle}
-          disabled={running}
-          title={running ? "En cours, annule le téléchargement pour le retirer" : "Sélectionner"}
-          className="shrink-0 disabled:opacity-30"
-        >
-          {picking.picked ? (
-            <CheckSquare size={19} className="text-primary" />
-          ) : (
-            <Square size={19} className="text-muted" />
-          )}
-        </button>
-      )}
-
+  const content: ReactNode = (
+    <>
       <div className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-md bg-surface-2 sm:w-36">
         {thumb ? (
           <img src={thumb} alt="" loading="lazy" className="h-full w-full object-cover" />
@@ -79,6 +68,11 @@ export function DownloadRow(props: DownloadRowProps) {
         <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[0.65rem] font-bold backdrop-blur-sm">
           {item.ep}
         </span>
+        {playable && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <Play size={22} className="fill-current" />
+          </div>
+        )}
         {item.status === "downloading" && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-black/50">
             <span
@@ -105,6 +99,38 @@ export function DownloadRow(props: DownloadRowProps) {
           </span>
         </p>
       </div>
+    </>
+  );
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/[0.04]">
+      {picking && (
+        <button
+          type="button"
+          onClick={picking.toggle}
+          disabled={running}
+          title={running ? "En cours, annule le téléchargement pour le retirer" : "Sélectionner"}
+          className="shrink-0 disabled:opacity-30"
+        >
+          {picking.picked ? (
+            <CheckSquare size={19} className="text-primary" />
+          ) : (
+            <Square size={19} className="text-muted" />
+          )}
+        </button>
+      )}
+
+      {playable ? (
+        <Link
+          to={watchLink(item.slug, item.seasonId, item.ep, item.lang)}
+          title="Lire"
+          className="group flex min-w-0 flex-1 items-center gap-3"
+        >
+          {content}
+        </Link>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-3">{content}</div>
+      )}
 
       {state.tone === "failed" && !picking && (
         <button type="button" onClick={props.onRetry} title="Réessayer" className={ICON_BUTTON}>
