@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
 import { appUrlCheck, resolveTarget } from "./app-url.mts";
+import { isolateDevData } from "./dev-data.mts";
 import { registerPlatformHandlers } from "./ipc.mts";
 
 const here = import.meta.dirname;
@@ -13,6 +14,7 @@ function fail(reason: string): never {
 }
 
 async function run(): Promise<void> {
+  isolateDevData();
   registerPlatformHandlers(appUrlCheck(target), null);
 
   const window = new BrowserWindow({

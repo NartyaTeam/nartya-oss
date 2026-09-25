@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
 import { readApiBase } from "./api-base.mts";
 import { appUrlCheck, resolveTarget } from "./app-url.mts";
+import { isolateDevData } from "./dev-data.mts";
 import { registerPlatformHandlers } from "./ipc.mts";
 import { createLogger, startFileLog } from "./log.mts";
 import { createWindow, revealOnce } from "./window.mts";
@@ -14,6 +15,9 @@ const log = createLogger("main");
 function open(): void {
   revealOnce(createWindow({ preload: join(here, "preload.cjs"), target, isAppUrl }));
 }
+
+// Before the lock and the handlers: both already live in the data folder.
+isolateDevData();
 
 // exit rather than quit: quit lets the module keep running to whenReady first.
 if (!app.requestSingleInstanceLock()) app.exit(0);
