@@ -83,3 +83,8 @@ One line per decision taken while rewriting. Longer reasoning goes in
   start and end dates, search to add, right click menu on cards and automatic "Terminé" when
   every episode was seen are dropped: few used them, and they weighed on the page. The dates
   Supabase records on a status change are kept, unused.
+- 2026-09-26 - The player sends the trusted watch time again (`watch_tick`), missing since the
+  writing switch: watch time, achievements and the leaderboard stood still. It beats every
+  30 seconds where the previous app beat every 60: the server credits at most 45 seconds a
+  beat, so a quarter of each minute watched was lost. Beats follow the position reports,
+  which only come while the video plays, and replace the periodic save they include.

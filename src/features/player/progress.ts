@@ -4,7 +4,8 @@ export const COMPLETION_THRESHOLD = 90;
 // Two saves closer than this are one: a flurry of pause and play would otherwise flood
 // the table. A forced save, on an episode change or on the way out, ignores it.
 export const MIN_SAVE_GAP_MS = 5_000;
-export const SAVE_EVERY_MS = 30_000;
+// The server credits at most 45 seconds of watching per beat, so beats come under that.
+export const BEAT_EVERY_MS = 30_000;
 
 export type Watched = { percent: number; completed: boolean };
 export type Resume = {
@@ -70,6 +71,41 @@ export function rowFor(userId: string, what: SaveWhat, at: string): Record<strin
     // Watching it again is what puts an anime back in the resume row.
     hidden_from_resume: false,
     updated_at: at,
+  };
+}
+
+// Minutes east of UTC: the server needs local time for its late night achievements.
+export function tzOffsetMinutes(at: Date): number {
+  return -at.getTimezoneOffset();
+}
+
+// A tick needs a position to save; before the player knows the duration, only time counts.
+export function beatDue(
+  what: SaveWhat,
+  lastBeatAt: number | null,
+  now: number,
+): "tick" | "beat" | null {
+  if (lastBeatAt !== null && now - lastBeatAt < BEAT_EVERY_MS) return null;
+  return what.duration > 0 && what.positionSeconds > 1 ? "tick" : "beat";
+}
+
+export function tickArgs(
+  what: SaveWhat,
+  seasonTotal: number | null,
+  tzOffset: number,
+): Record<string, unknown> {
+  return {
+    p_episode_key: episodeKey(what.slug, what.seasonId, what.episodeNumber, what.language),
+    p_slug: what.slug,
+    p_season_id: what.seasonId,
+    p_episode_number: what.episodeNumber,
+    p_language: what.language,
+    p_position: what.positionSeconds,
+    p_duration: what.duration,
+    p_title: cleanTitle(what.title),
+    p_cover: what.cover,
+    p_tz_offset: tzOffset,
+    p_season_total: seasonTotal && seasonTotal > 0 ? seasonTotal : null,
   };
 }
 
@@ -187,6 +223,20 @@ export function createProgress(client: SupabaseClient) {
         .in("anime_slug", slugs)
         .order("updated_at", { ascending: false });
       return lastPerAnime(data);
+    },
+
+    // Credits the time really spent watching, counted by the server, and saves the position.
+    tick: async (what: SaveWhat, seasonTotal: number | null): Promise<void> => {
+      await client.rpc("watch_tick", tickArgs(what, seasonTotal, tzOffsetMinutes(new Date())));
+    },
+
+    // Before the duration is known there is no position worth saving, but time still counts.
+    beat: async (key: string): Promise<void> => {
+      await client.rpc("heartbeat_watch", {
+        p_episode_key: key,
+        p_duration: null,
+        p_tz_offset: tzOffsetMinutes(new Date()),
+      });
     },
 
     save: async (userId: string, what: SaveWhat, force = false): Promise<void> => {

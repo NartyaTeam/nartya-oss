@@ -5,6 +5,9 @@ import {
   episodeKey,
   foldByEpisode,
   lastPerAnime,
+  tickArgs,
+  beatDue,
+  BEAT_EVERY_MS,
   readResume,
   rowFor,
   shouldSave,
@@ -110,4 +113,65 @@ test("each anime shows the episode watched last, not the furthest", () => {
     b: { episodeNumber: 12, percent: 100, completed: true },
   });
   assert.deepEqual(lastPerAnime(null), {});
+});
+
+test("a tick carries the episode, where it stands, and the season's size", () => {
+  const what = {
+    slug: "one-piece",
+    seasonId: "saison1",
+    episodeNumber: 12,
+    language: "vf",
+    positionSeconds: 300,
+    duration: 1400,
+    title: "Sans titre",
+    cover: "c.jpg",
+  };
+  assert.deepEqual(tickArgs(what, 24, 120), {
+    p_episode_key: "one-piece:saison1:12:vf",
+    p_slug: "one-piece",
+    p_season_id: "saison1",
+    p_episode_number: 12,
+    p_language: "vf",
+    p_position: 300,
+    p_duration: 1400,
+    p_title: null,
+    p_cover: "c.jpg",
+    p_tz_offset: 120,
+    p_season_total: 24,
+  });
+  assert.equal(tickArgs(what, 0, 0).p_season_total, null);
+});
+
+test("a beat goes out at the first report, then once per period", () => {
+  const playing = {
+    slug: "a",
+    seasonId: "s1",
+    episodeNumber: 1,
+    language: "vf",
+    positionSeconds: 30,
+    duration: 1400,
+    title: null,
+    cover: null,
+  };
+  assert.equal(beatDue(playing, null, 1_000), "tick");
+  assert.equal(beatDue(playing, 1_000, 1_000 + BEAT_EVERY_MS - 1), null);
+  assert.equal(beatDue(playing, 1_000, 1_000 + BEAT_EVERY_MS), "tick");
+});
+
+test("before the duration is known, the beat only counts time", () => {
+  const loading = {
+    slug: "a",
+    seasonId: "s1",
+    episodeNumber: 1,
+    language: "vf",
+    positionSeconds: 0,
+    duration: 0,
+    title: null,
+    cover: null,
+  };
+  assert.equal(beatDue(loading, null, 0), "beat");
+});
+
+test("beats stay under the 45 seconds the server credits for each", () => {
+  assert.ok(BEAT_EVERY_MS <= 45_000);
 });

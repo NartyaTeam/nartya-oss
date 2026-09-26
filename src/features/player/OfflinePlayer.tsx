@@ -51,7 +51,7 @@ export function OfflinePlayer({ item, progress, userId, onLeave, onPick }: Offli
     };
   }, [key, progress, userId]);
 
-  const { watching, save } = useProgressSaver(progress, userId, key);
+  const { report, save } = useProgressSaver(progress, userId, key, null);
 
   const goNext = (): void => {
     save(true);
@@ -81,7 +81,7 @@ export function OfflinePlayer({ item, progress, userId, onLeave, onPick }: Offli
         country={null}
         onLanguage={() => undefined}
         onTime={(seconds, duration) => {
-          watching.current = {
+          report({
             slug: item.slug,
             seasonId: item.seasonId,
             episodeNumber: item.ep,
@@ -90,7 +90,7 @@ export function OfflinePlayer({ item, progress, userId, onLeave, onPick }: Offli
             duration,
             title: item.animeTitle,
             cover: item.animeCover,
-          };
+          });
         }}
         onEnded={goNext}
         onError={() => setOpened({ key, source: null, startAt: 0, error: FAILED })}

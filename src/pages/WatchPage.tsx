@@ -93,7 +93,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     resumeAt ?? 0,
   );
 
-  const { watching, save } = useProgressSaver(progress, userId, watchKey);
+  const { watching, report, save } = useProgressSaver(progress, userId, watchKey, playable.length);
 
   const seasonIndex = season ? seasons.indexOf(season) : 0;
   const skipsKey = `skips:${slug}:${season?.id ?? ""}:${String(episode?.number ?? 0)}`;
@@ -247,7 +247,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
         onLanguage={switchLanguage}
         onTime={(seconds, duration) => {
           if (!season || !episode) return;
-          watching.current = {
+          report({
             slug,
             seasonId: season.id,
             episodeNumber: episode.number,
@@ -256,7 +256,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
             duration,
             title: page.anime.title,
             cover: page.images?.poster ?? page.anime.poster,
-          };
+          });
           stream.onTime(seconds);
           credits.report(seconds, duration);
         }}
