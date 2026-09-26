@@ -53,6 +53,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@radix-ui/react-context-menu": "^2.3.7",
     "@radix-ui/react-select": "^2.3.7",
     "@supabase/supabase-js": "^2.116.0",
     "anime4k-webgpu": "1.0.0",

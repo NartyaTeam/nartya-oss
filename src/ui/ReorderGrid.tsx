@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, type ReactNode } from "react";
-import { moved } from "./favorites.ts";
+import { moved } from "../lib/moved.ts";
 
 type ReorderGridProps<T> = {
   items: T[];

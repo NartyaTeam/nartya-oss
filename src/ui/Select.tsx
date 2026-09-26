@@ -9,6 +9,7 @@ type SelectProps = {
   onValueChange: (value: string) => void;
   options: Option[];
   label: string;
+  placeholder?: string;
   className?: string;
 };
 
@@ -29,11 +30,12 @@ function runsOf(options: Option[]): Run[] {
 
 // The native menu is drawn by the system: it lands wherever it likes and ignores the theme.
 // This one is ours, anchored under its trigger and the width of it.
-export function Select({ value, onValueChange, options, label, className = "" }: SelectProps) {
+export function Select(props: SelectProps) {
+  const { value, onValueChange, options, label, placeholder, className = "" } = props;
   return (
     <RSelect.Root value={value} onValueChange={onValueChange}>
       <RSelect.Trigger title={label} aria-label={label} className={`${TRIGGER} ${className}`}>
-        <RSelect.Value />
+        <RSelect.Value placeholder={placeholder} />
         <RSelect.Icon asChild>
           <ChevronDown size={15} className="ml-auto text-muted" />
         </RSelect.Icon>

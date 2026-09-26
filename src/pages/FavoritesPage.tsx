@@ -1,13 +1,13 @@
 import { LayoutGrid, ListOrdered, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FavoriteCard } from "../features/favorites/FavoriteCard.tsx";
 import {
   byGenre,
   matching,
   type Favorite,
   type Favorites,
 } from "../features/favorites/favorites.ts";
-import { ReorderGrid } from "../features/favorites/ReorderGrid.tsx";
+import { PosterCard } from "../ui/PosterCard.tsx";
+import { ReorderGrid } from "../ui/ReorderGrid.tsx";
 import { useFavorites } from "../features/favorites/store.ts";
 import type { LastWatched, Progress } from "../features/player/progress.ts";
 import { Empty } from "../ui/Empty.tsx";
@@ -60,7 +60,7 @@ export function FavoritesPage({ favorites, progress, userId }: FavoritesPageProp
   const shown = matching(items, query);
   const searching = query.trim() !== "";
   const tile = (favorite: Favorite, sortable = false) => (
-    <FavoriteCard favorite={favorite} last={last[favorite.slug]} sortable={sortable} />
+    <PosterCard anime={favorite} last={last[favorite.slug]} sortable={sortable} />
   );
 
   return (

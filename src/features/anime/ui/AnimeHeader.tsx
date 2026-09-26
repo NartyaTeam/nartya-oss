@@ -104,10 +104,10 @@ type HeaderProps = {
   seasonCover: string | null;
   seasonSynopsis: string | null;
   resume: { to: string; label: string } | null;
-  favorite: ReactNode;
+  actions: ReactNode;
 };
 
-export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume, favorite }: HeaderProps) {
+export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume, actions }: HeaderProps) {
   const { anime, meta, images } = page;
   const poster = seasonCover ?? images?.poster ?? anime.poster;
   const banner = images?.fanart ?? images?.banner;
@@ -144,17 +144,15 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume, favorit
               <div className="aspect-[2/3] w-full bg-surface-2" />
             )}
           </div>
-          <div className="mt-3 flex justify-end gap-2">
-            {resume && (
-              <Link to={resume.to} className="min-w-0 flex-1">
-                <Button className="h-12 w-full whitespace-nowrap">
-                  <Play size={18} className="shrink-0 fill-current" />
-                  {resume.label}
-                </Button>
-              </Link>
-            )}
-            {favorite}
-          </div>
+          {resume && (
+            <Link to={resume.to} className="mt-3 block">
+              <Button className="h-12 w-full whitespace-nowrap">
+                <Play size={18} className="shrink-0 fill-current" />
+                {resume.label}
+              </Button>
+            </Link>
+          )}
+          <div className="mt-2 flex gap-2">{actions}</div>
         </div>
 
         <div className="flex-1 pt-2 md:pt-20">

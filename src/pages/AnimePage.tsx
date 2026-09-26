@@ -14,6 +14,8 @@ import { useResource } from "../lib/use-resource.ts";
 import { usePresence } from "../features/presence/usePresence.ts";
 import { FavoriteButton } from "../features/favorites/FavoriteButton.tsx";
 import type { Favorites } from "../features/favorites/favorites.ts";
+import type { Lists } from "../features/lists/lists.ts";
+import { StatusPicker } from "../features/lists/StatusPicker.tsx";
 import { Empty } from "../ui/Empty.tsx";
 import { firstSeason } from "../features/anime/season-groups.ts";
 
@@ -24,6 +26,7 @@ type AnimeProps = {
   store: ResourceStore;
   progress: Progress;
   favorites: Favorites;
+  lists: Lists;
   userId: string;
 };
 
@@ -41,7 +44,7 @@ function Skeleton() {
   );
 }
 
-export function AnimePage({ anime, store, progress, favorites, userId }: AnimeProps) {
+export function AnimePage({ anime, store, progress, favorites, lists, userId }: AnimeProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -96,6 +99,9 @@ export function AnimePage({ anime, store, progress, favorites, userId }: AnimePr
     );
   }
 
+  const title = card.data.anime.title;
+  const cover = card.data.images?.poster ?? card.data.anime.poster;
+
   return (
     <div className="animate-fade-in pb-16">
       <AnimeHeader
@@ -103,16 +109,14 @@ export function AnimePage({ anime, store, progress, favorites, userId }: AnimePr
         seasonCover={list.data?.cover ?? null}
         seasonSynopsis={list.data?.description ?? null}
         resume={resumeLink(slug, last.data ?? null, season?.id ?? null, lang)}
-        favorite={
-          <FavoriteButton
-            api={favorites}
-            favorite={{
-              slug,
-              title: card.data.anime.title,
-              cover: card.data.images?.poster ?? card.data.anime.poster,
-              genre: card.data.meta?.genres[0] ?? null,
-            }}
-          />
+        actions={
+          <>
+            <StatusPicker api={lists} anime={{ slug, title, cover }} />
+            <FavoriteButton
+              api={favorites}
+              favorite={{ slug, title, cover, genre: card.data.meta?.genres[0] ?? null }}
+            />
+          </>
         }
       />
       {season && (

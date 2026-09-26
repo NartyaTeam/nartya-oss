@@ -78,3 +78,8 @@ One line per decision taken while rewriting. Longer reasoning goes in
   on drop, which felt like dragging an image off a web page. `@dnd-kit` moves the card itself
   and makes room live, and brings auto scroll and keyboard reordering. Its classic line was
   last published in December 2024 and needs only `tslib` and its own accessibility module.
+- 2026-09-26 - "Mes listes" stays simple: a place to put the anime one means to watch, with a
+  status changed from the card or the anime page. The previous app's detail drawer, edited
+  start and end dates, search to add, right click menu on cards and automatic "Terminé" when
+  every episode was seen are dropped: few used them, and they weighed on the page. The dates
+  Supabase records on a status change are kept, unused.

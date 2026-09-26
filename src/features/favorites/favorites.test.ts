@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { byGenre, matching, moved, readFavorites, UNSORTED, type Favorite } from "./favorites.ts";
+import { byGenre, matching, readFavorites, UNSORTED, type Favorite } from "./favorites.ts";
 
 const favorite = (slug: string, genre: string | null = null): Favorite => ({
   slug,
@@ -49,10 +49,4 @@ test("genres come largest first, and the unsorted last", () => {
       [UNSORTED, 1],
     ],
   );
-});
-
-test("moving an item shifts the others around it", () => {
-  assert.deepEqual(moved(["a", "b", "c", "d"], 0, 2), ["b", "c", "a", "d"]);
-  assert.deepEqual(moved(["a", "b", "c", "d"], 3, 1), ["a", "d", "b", "c"]);
-  assert.deepEqual(moved(["a", "b"], 5, 0), ["a", "b"]);
 });

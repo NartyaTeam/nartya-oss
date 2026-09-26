@@ -50,14 +50,6 @@ export function byGenre(favorites: Favorite[]): [string, Favorite[]][] {
   });
 }
 
-export function moved<T>(items: T[], from: number, to: number): T[] {
-  const next = [...items];
-  const [item] = next.splice(from, 1);
-  if (item === undefined) return items;
-  next.splice(to, 0, item);
-  return next;
-}
-
 export function createFavorites(client: SupabaseClient) {
   return {
     list: async (userId: string): Promise<Favorite[] | null> => {
