@@ -66,7 +66,7 @@ test("runs a queued download and marks it done", async () => {
   const { store, downloads } = manager();
   store.set("a", episode);
   downloads.enqueue({ id: "a", url: "https://cdn.test/a.mp4", provider: null });
-  await settle();
+  await until(() => store.get("a")?.status === "done");
 
   assert.equal(store.get("a")?.status, "done");
   assert.equal(store.get("a")?.percent, 100);
