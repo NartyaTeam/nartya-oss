@@ -86,7 +86,7 @@ export function createAuthFlows(parts: FlowParts) {
     if (error) return { error: error.message };
     if (!bridge) return { error: null };
 
-    if (!(await bridge.open(data.url))) return { error: "failed to send" };
+    if (!(await bridge.open(data.url))) return { error: "browser did not open" };
     return waitAndExchange();
   }
 

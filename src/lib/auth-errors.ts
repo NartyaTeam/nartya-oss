@@ -14,6 +14,7 @@ const MESSAGES: [RegExp, string][] = [
   ],
   [/expired|invalid.*token|token.*invalid/, "Ce lien a expiré. Demande-en un nouveau."],
   [/rate limit|too many/, "Trop de tentatives. Réessaie dans un instant."],
+  [/browser did not open/, "Le navigateur n'a pas pu s'ouvrir. Réessaie."],
   [/network|fetch|failed to send/, "Pas de connexion. Vérifie ton réseau."],
 ];
 

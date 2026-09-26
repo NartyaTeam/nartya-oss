@@ -25,3 +25,10 @@ test("falls back rather than showing a raw gotrue message", () => {
   assert.equal(translateAuthError(null), "Une erreur est survenue. Réessaie.");
   assert.equal(translateAuthError(undefined), "Une erreur est survenue. Réessaie.");
 });
+
+test("a browser that did not open is not blamed on the network", () => {
+  assert.equal(
+    translateAuthError("browser did not open"),
+    "Le navigateur n'a pas pu s'ouvrir. Réessaie.",
+  );
+});

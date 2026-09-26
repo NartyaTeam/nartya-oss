@@ -23,6 +23,17 @@ const log = createLogger("auth");
 // forgotten window does not leave a port open on the machine for the whole session.
 const WAIT_MS = 5 * 60_000;
 
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+function isOpenable(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === "https:" || (protocol === "http:" && LOOPBACK.has(hostname));
+  } catch {
+    return false;
+  }
+}
+
 export function createAuth(parts: AuthParts) {
   const { openUrl } = parts;
   const server = parts.server ?? createAuthCallbackServer();
@@ -135,9 +146,9 @@ export function createAuth(parts: AuthParts) {
   }
 
   // Only https, so a renderer that got compromised cannot make the system open a file or a
-  // scheme handler. It is the same power as clicking a link, no more.
+  // scheme handler. Plain http only reaches this machine, where a local Supabase runs.
   async function open(url: unknown): Promise<boolean> {
-    if (typeof url !== "string" || !url.startsWith("https://")) {
+    if (typeof url !== "string" || !isOpenable(url)) {
       log.warn("refused to open an external url", { url: typeof url === "string" ? url : "?" });
       return false;
     }

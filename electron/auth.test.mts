@@ -106,6 +106,19 @@ test("opens https only, whatever the renderer asks for", async () => {
   assert.deepEqual(opened, ["https://auth.example.test/authorize?p=discord"]);
 });
 
+test("a local Supabase is opened over http, and no other host is", async () => {
+  const opened: string[] = [];
+  const { server } = fakeServer();
+  const auth = createAuth({ server, openUrl: async (url) => void opened.push(url) });
+
+  assert.equal(await auth.open("http://127.0.0.1:54321/auth/v1/authorize?provider=discord"), true);
+  assert.equal(await auth.open("http://localhost:54321/auth/v1/authorize"), true);
+  assert.equal(await auth.open("http://[::1]:54321/auth/v1/authorize"), true);
+  assert.equal(await auth.open("http://127.0.0.1.example.test/authorize"), false);
+  assert.equal(await auth.open("http://192.168.1.10:54321/authorize"), false);
+  assert.equal(opened.length, 3);
+});
+
 test("a browser that refuses to open is an answer, not a crash", async () => {
   const { server } = fakeServer();
   const auth = createAuth({
