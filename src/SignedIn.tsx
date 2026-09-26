@@ -4,6 +4,7 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
 import { useDownloads } from "./features/downloads/store.ts";
+import { DeepLinks } from "./features/navigation/DeepLinks.tsx";
 import { OfflineRedirect } from "./features/network/OfflineRedirect.tsx";
 import { useNetwork, type Probe } from "./features/network/store.ts";
 import { activeTier, downloadSlots } from "./features/session/premium.ts";
@@ -75,6 +76,7 @@ export function SignedIn({
   return (
     <HashRouter>
       <OfflineRedirect />
+      <DeepLinks />
       <Routes>
         <Route
           path="/watch/:slug"

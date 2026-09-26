@@ -24,7 +24,9 @@ export type Channel =
   | "downloads-local-url"
   | "downloads-open-folder"
   | "downloads-set-slots"
-  | "downloads-changed";
+  | "downloads-changed"
+  | "navigation-take"
+  | "navigation-pending";
 
 // Sign in happens in the system browser, so the app never sees the provider's page. The
 // redirect lands on a loopback server the main process owns, which hands back the url.
@@ -63,9 +65,16 @@ export type DownloadsBridge = {
   onChange: (listener: (id: string, item: DownloadItem | null) => void) => () => void;
 };
 
+// A nartya:// link opened from outside. The route waits in the main process until taken.
+export type NavigationBridge = {
+  take: () => Promise<string | null>;
+  onPending: (listener: () => void) => () => void;
+};
+
 export type Platform = {
   getAppInfo: () => Promise<AppInfo>;
   auth: AuthBridge;
   stream: StreamBridge;
   downloads: DownloadsBridge;
+  navigation: NavigationBridge;
 };

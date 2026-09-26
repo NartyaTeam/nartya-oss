@@ -36,6 +36,14 @@ const platform: Platform = {
       return () => ipcRenderer.removeListener("downloads-changed", relay);
     },
   },
+  navigation: {
+    take: () => invoke("navigation-take"),
+    onPending: (listener) => {
+      const relay = (): void => listener();
+      ipcRenderer.on("navigation-pending", relay);
+      return () => ipcRenderer.removeListener("navigation-pending", relay);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld("platform", platform);
