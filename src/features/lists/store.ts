@@ -7,20 +7,42 @@ type ListsState = {
   userId: string | null;
   items: Entry[] | null;
   failed: Failure | null;
+  autoTrack: boolean;
+  setAutoTrack: (on: boolean) => void;
   load: (api: Lists, userId: string) => Promise<void>;
   place: (api: Lists, entry: Entry) => Promise<void>;
   remove: (api: Lists, slug: string) => Promise<void>;
   reorder: (api: Lists, status: Status, slugs: string[]) => Promise<void>;
+  track: (api: Lists, anime: Omit<Entry, "status" | "changedAt">) => Promise<void>;
 };
 
 const LOAD_FAILED = "Impossible de charger tes listes.";
 const SAVE_FAILED = "Impossible de mettre à jour ta liste.";
 const REORDER_FAILED = "Impossible d'enregistrer le nouvel ordre.";
+const AUTO_TRACK_KEY = "nartya:lists-auto-track";
+
+function readAutoTrack(): boolean {
+  try {
+    return globalThis.localStorage.getItem(AUTO_TRACK_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
 
 export const useLists = create<ListsState>((set, get) => ({
   userId: null,
   items: null,
   failed: null,
+  autoTrack: readAutoTrack(),
+
+  setAutoTrack: (on) => {
+    set({ autoTrack: on });
+    try {
+      globalThis.localStorage.setItem(AUTO_TRACK_KEY, on ? "on" : "off");
+    } catch {
+      // Quota or a private window: the choice still holds until the app closes.
+    }
+  },
 
   load: async (api, userId) => {
     if (get().userId === userId && get().items) return;
@@ -63,6 +85,17 @@ export const useLists = create<ListsState>((set, get) => ({
       items: [before, ...(state.items ?? [])],
       failed: { slug, message: SAVE_FAILED },
     }));
+  },
+
+  // An anime already kept somewhere, even under another slug of the same title, stays put.
+  track: async (api, anime) => {
+    if (!get().autoTrack) return;
+    const title = anime.title.toLowerCase();
+    const known = get().items?.some(
+      (held) => held.slug === anime.slug || held.title.toLowerCase() === title,
+    );
+    if (known !== false) return;
+    await get().place(api, { ...anime, status: "watching", changedAt: null });
   },
 
   reorder: async (api, status, slugs) => {

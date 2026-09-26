@@ -88,3 +88,7 @@ One line per decision taken while rewriting. Longer reasoning goes in
   30 seconds where the previous app beat every 60: the server credits at most 45 seconds a
   beat, so a quarter of each minute watched was lost. Beats follow the position reports,
   which only come while the video plays, and replace the periodic save they include.
+- 2026-09-26 - An anime watched for two minutes, or to the end of a shorter episode, joins
+  "En cours" when it is in no list yet, as in the previous app. A switch on "Mes listes" turns
+  it off, for those who try an anime without meaning to follow it. The choice is kept per
+  device until the settings page decides where preferences live.

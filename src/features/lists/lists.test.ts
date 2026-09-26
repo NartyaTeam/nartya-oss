@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { countByStatus, readEntries, statusLine } from "./lists.ts";
+import { countByStatus, hasStarted, readEntries, statusLine } from "./lists.ts";
 
 test("rows read from Supabase keep what the page needs", () => {
   assert.deepEqual(
@@ -58,4 +58,11 @@ test("the date says when the status changed, with the year only when it is anoth
   );
   assert.equal(statusLine("dropped", null, now), null);
   assert.equal(statusLine("planned", "not a date", now), null);
+});
+
+test("watching starts past two minutes, or at the end of a shorter episode", () => {
+  assert.equal(hasStarted(30, 1400), false);
+  assert.equal(hasStarted(120, 1400), true);
+  assert.equal(hasStarted(90, 100), true);
+  assert.equal(hasStarted(60, 0), false);
 });

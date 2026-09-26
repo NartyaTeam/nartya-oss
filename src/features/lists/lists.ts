@@ -71,6 +71,16 @@ export function statusLine(status: Status, changedAt: string | null, now: Date):
   return `${SINCE[status]} ${day}`;
 }
 
+// Past the opening credits, or the whole of an episode shorter than that: a real start,
+// not a source that loaded and was left at once.
+const STARTED_AFTER_SECONDS = 120;
+const FINISHED_PERCENT = 90;
+
+export function hasStarted(seconds: number, duration: number): boolean {
+  if (seconds >= STARTED_AFTER_SECONDS) return true;
+  return duration > 0 && (seconds / duration) * 100 >= FINISHED_PERCENT;
+}
+
 export function countByStatus(entries: Entry[]): Record<Status, number> {
   const counts: Record<Status, number> = { watching: 0, planned: 0, completed: 0, dropped: 0 };
   for (const entry of entries) counts[entry.status] += 1;

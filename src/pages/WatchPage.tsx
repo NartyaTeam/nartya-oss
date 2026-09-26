@@ -14,6 +14,8 @@ import { EpisodePanel } from "../features/player/EpisodePanel.tsx";
 import { NextPreview } from "../features/player/NextPreview.tsx";
 import { OfflinePlayer } from "../features/player/OfflinePlayer.tsx";
 import { usePresence } from "../features/presence/usePresence.ts";
+import type { Lists } from "../features/lists/lists.ts";
+import { useAutoTrack } from "../features/lists/useAutoTrack.ts";
 import { Player } from "../features/player/Player.tsx";
 import { PlayerStatus } from "../features/player/PlayerStatus.tsx";
 import { episodeKey, type Progress } from "../features/player/progress.ts";
@@ -32,9 +34,15 @@ const PANEL_CLOSE_DELAY_MS = 120;
 
 const NO_SEASON: SeasonEpisodes = { name: null, description: null, cover: null, episodes: [] };
 
-type WatchProps = { anime: Anime; store: ResourceStore; progress: Progress; userId: string };
+type WatchProps = {
+  anime: Anime;
+  store: ResourceStore;
+  progress: Progress;
+  lists: Lists;
+  userId: string;
+};
 
-export function WatchPage({ anime, store, progress, userId }: WatchProps) {
+export function WatchPage({ anime, store, progress, lists, userId }: WatchProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -94,6 +102,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   );
 
   const { watching, report, save } = useProgressSaver(progress, userId, watchKey, playable.length);
+  const track = useAutoTrack(lists);
 
   const seasonIndex = season ? seasons.indexOf(season) : 0;
   const skipsKey = `skips:${slug}:${season?.id ?? ""}:${String(episode?.number ?? 0)}`;
@@ -247,6 +256,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
         onLanguage={switchLanguage}
         onTime={(seconds, duration) => {
           if (!season || !episode) return;
+          const cover = page.images?.poster ?? page.anime.poster;
           report({
             slug,
             seasonId: season.id,
@@ -255,8 +265,9 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
             positionSeconds: seconds,
             duration,
             title: page.anime.title,
-            cover: page.images?.poster ?? page.anime.poster,
+            cover,
           });
+          track({ slug, title: page.anime.title, cover }, seconds, duration);
           stream.onTime(seconds);
           credits.report(seconds, duration);
         }}

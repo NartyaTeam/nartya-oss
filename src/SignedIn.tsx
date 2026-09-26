@@ -95,7 +95,15 @@ export function SignedIn({
       <Routes>
         <Route
           path="/watch/:slug"
-          element={<WatchPage anime={anime} store={store} progress={progress} userId={userId} />}
+          element={
+            <WatchPage
+              anime={anime}
+              store={store}
+              progress={progress}
+              lists={lists}
+              userId={userId}
+            />
+          }
         />
         <Route
           path="*"

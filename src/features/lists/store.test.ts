@@ -31,7 +31,7 @@ function fakeApi(saved = true, rows: Entry[] = []) {
   return { api, calls };
 }
 
-const fresh = () => useLists.setState({ userId: null, items: null, failed: null });
+const fresh = () => useLists.setState({ userId: null, items: null, failed: null, autoTrack: true });
 const shown = () => useLists.getState().items?.map((held) => `${held.slug}:${held.status}`);
 
 test("a new anime joins its list, and a known one changes list", async () => {
@@ -112,4 +112,42 @@ test("a status just chosen is dated now, before Supabase answers", async () => {
   await useLists.getState().place(api, entry("a", "watching"));
   const changedAt = useLists.getState().items?.[0]?.changedAt;
   assert.ok(changedAt && Date.parse(changedAt) >= before);
+});
+
+test("an anime watched while in no list joins En cours", async () => {
+  fresh();
+  const { api, calls } = fakeApi(true, []);
+  await useLists.getState().load(api, "u1");
+  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  assert.deepEqual(shown(), ["a:watching"]);
+  assert.deepEqual(calls, ["set a watching"]);
+});
+
+test("an anime already kept, or kept under another slug, is not moved", async () => {
+  fresh();
+  const { api, calls } = fakeApi(true, [
+    entry("a", "planned"),
+    { ...entry("b-old", "dropped"), title: "Bleach" },
+  ]);
+  await useLists.getState().load(api, "u1");
+  await useLists.getState().track(api, { slug: "a", title: "a", cover: null });
+  await useLists.getState().track(api, { slug: "bleach", title: "BLEACH", cover: null });
+  assert.deepEqual(calls, []);
+});
+
+test("nothing is tracked while the lists are unknown", async () => {
+  fresh();
+  const { api, calls } = fakeApi();
+  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  assert.deepEqual(calls, []);
+});
+
+test("nothing is tracked once automatic tracking is turned off", async () => {
+  fresh();
+  const { api, calls } = fakeApi(true, []);
+  await useLists.getState().load(api, "u1");
+  useLists.getState().setAutoTrack(false);
+  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  assert.deepEqual(shown(), []);
+  assert.deepEqual(calls, []);
 });
