@@ -118,7 +118,7 @@ test("an anime watched while in no list joins En cours", async () => {
   fresh();
   const { api, calls } = fakeApi(true, []);
   await useLists.getState().load(api, "u1");
-  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  useLists.getState().track(api, { slug: "a", title: "A", cover: null });
   assert.deepEqual(shown(), ["a:watching"]);
   assert.deepEqual(calls, ["set a watching"]);
 });
@@ -130,16 +130,20 @@ test("an anime already kept, or kept under another slug, is not moved", async ()
     { ...entry("b-old", "dropped"), title: "Bleach" },
   ]);
   await useLists.getState().load(api, "u1");
-  await useLists.getState().track(api, { slug: "a", title: "a", cover: null });
-  await useLists.getState().track(api, { slug: "bleach", title: "BLEACH", cover: null });
+  useLists.getState().track(api, { slug: "a", title: "a", cover: null });
+  useLists.getState().track(api, { slug: "bleach", title: "BLEACH", cover: null });
   assert.deepEqual(calls, []);
 });
 
-test("nothing is tracked while the lists are unknown", async () => {
+test("an anime watched before the lists load is tracked once they have", async () => {
   fresh();
-  const { api, calls } = fakeApi();
-  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  const { api, calls } = fakeApi(true, []);
+  const anime = { slug: "a", title: "A", cover: null };
+  assert.equal(useLists.getState().track(api, anime), false);
   assert.deepEqual(calls, []);
+  await useLists.getState().load(api, "u1");
+  assert.equal(useLists.getState().track(api, anime), true);
+  assert.deepEqual(shown(), ["a:watching"]);
 });
 
 test("nothing is tracked once automatic tracking is turned off", async () => {
@@ -147,7 +151,7 @@ test("nothing is tracked once automatic tracking is turned off", async () => {
   const { api, calls } = fakeApi(true, []);
   await useLists.getState().load(api, "u1");
   useLists.getState().setAutoTrack(false);
-  await useLists.getState().track(api, { slug: "a", title: "A", cover: null });
+  useLists.getState().track(api, { slug: "a", title: "A", cover: null });
   assert.deepEqual(shown(), []);
   assert.deepEqual(calls, []);
 });

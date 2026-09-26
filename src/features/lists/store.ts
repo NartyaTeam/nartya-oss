@@ -13,7 +13,7 @@ type ListsState = {
   place: (api: Lists, entry: Entry) => Promise<void>;
   remove: (api: Lists, slug: string) => Promise<void>;
   reorder: (api: Lists, status: Status, slugs: string[]) => Promise<void>;
-  track: (api: Lists, anime: Omit<Entry, "status" | "changedAt">) => Promise<void>;
+  track: (api: Lists, anime: Omit<Entry, "status" | "changedAt">) => boolean;
 };
 
 const LOAD_FAILED = "Impossible de charger tes listes.";
@@ -87,15 +87,18 @@ export const useLists = create<ListsState>((set, get) => ({
     }));
   },
 
+  // False while the lists are unknown, so the caller asks again once they have loaded.
   // An anime already kept somewhere, even under another slug of the same title, stays put.
-  track: async (api, anime) => {
-    if (!get().autoTrack) return;
+  track: (api, anime) => {
+    const { autoTrack, items } = get();
+    if (!items) return false;
+    if (!autoTrack) return true;
     const title = anime.title.toLowerCase();
-    const known = get().items?.some(
+    const known = items.some(
       (held) => held.slug === anime.slug || held.title.toLowerCase() === title,
     );
-    if (known !== false) return;
-    await get().place(api, { ...anime, status: "watching", changedAt: null });
+    if (!known) void get().place(api, { ...anime, status: "watching", changedAt: null });
+    return true;
   },
 
   reorder: async (api, status, slugs) => {
