@@ -13,14 +13,11 @@ import { CreditsControls } from "../features/player/CreditsControls.tsx";
 import { EpisodePanel } from "../features/player/EpisodePanel.tsx";
 import { NextPreview } from "../features/player/NextPreview.tsx";
 import { OfflinePlayer } from "../features/player/OfflinePlayer.tsx";
+import { usePresence } from "../features/presence/usePresence.ts";
 import { Player } from "../features/player/Player.tsx";
 import { PlayerStatus } from "../features/player/PlayerStatus.tsx";
-import {
-  episodeKey,
-  SAVE_EVERY_MS,
-  type Progress,
-  type SaveWhat,
-} from "../features/player/progress.ts";
+import { episodeKey, type Progress } from "../features/player/progress.ts";
+import { useProgressSaver } from "../features/player/useProgressSaver.ts";
 import { settleStart, type StartAt } from "../features/player/resume.ts";
 import { useCredits } from "../features/player/useCredits.ts";
 import { useEpisodeStream } from "../features/player/useEpisodeStream.ts";
@@ -96,27 +93,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
     resumeAt ?? 0,
   );
 
-  // What is saved rides on the report, not on the render: at cleanup the render already
-  // describes the next episode, and the position just left would land under its key.
-  const watching = useRef<SaveWhat | null>(null);
-  const save = useRef<(force: boolean) => void>(() => undefined);
-  save.current = (force) => {
-    const what = watching.current;
-    if (!what || what.duration <= 0) return;
-    if (force) watching.current = null;
-    void progress.save(userId, what, force);
-  };
-
-  useEffect(() => {
-    const id = setInterval(() => save.current(false), SAVE_EVERY_MS);
-    const onLeaving = (): void => save.current(true);
-    window.addEventListener("pagehide", onLeaving);
-    return () => {
-      clearInterval(id);
-      window.removeEventListener("pagehide", onLeaving);
-      save.current(true);
-    };
-  }, [slug, season?.id, episode?.number, lang]);
+  const { watching, save } = useProgressSaver(progress, userId, watchKey);
 
   const seasonIndex = season ? seasons.indexOf(season) : 0;
   const skipsKey = `skips:${slug}:${season?.id ?? ""}:${String(episode?.number ?? 0)}`;
@@ -149,7 +126,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   };
 
   function goTo(number: number, seasonId?: string): void {
-    save.current(true);
+    save(true);
     const wanted = new URLSearchParams(params);
     if (seasonId) wanted.set("saison", seasonId);
     wanted.set("ep", String(number));
@@ -158,6 +135,24 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   }
 
   const page = card.data;
+  const offline = requested?.type === "episode" && requested.status === "done" ? requested : null;
+  usePresence(
+    page && season && episode
+      ? {
+          kind: "watching",
+          slug,
+          title: page.anime.title,
+          episode: episode.number,
+          season: seasonNumber(season.name, seasonIndex),
+        }
+      : offline && {
+          kind: "watching",
+          slug,
+          title: offline.animeTitle,
+          episode: offline.ep,
+          season: seasonNumber(offline.seasonName ?? "", 0),
+        },
+  );
   const leave = (): void => {
     const state: unknown = window.history.state;
     const depth = typeof state === "object" && state !== null ? Reflect.get(state, "idx") : 0;
@@ -167,10 +162,10 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
 
   // The api out of reach, from no network or its own failure: a download still plays.
   const stranded = (!page && card.error !== null) || (list.error !== null && all.length === 0);
-  if (stranded && requested?.type === "episode" && requested.status === "done") {
+  if (stranded && offline) {
     return (
       <OfflinePlayer
-        item={requested}
+        item={offline}
         progress={progress}
         userId={userId}
         onLeave={leave}
@@ -195,7 +190,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
   const switchLanguage = (to: string): void => {
     if (!season || !episode) return;
     const at = watching.current?.positionSeconds ?? 0;
-    save.current(true);
+    save(true);
     setResume({ key: episodeKey(slug, season.id, episode.number, to), seconds: at });
     const wanted = new URLSearchParams(params);
     wanted.set("lang", to);
@@ -266,7 +261,7 @@ export function WatchPage({ anime, store, progress, userId }: WatchProps) {
           credits.report(seconds, duration);
         }}
         onEnded={() => {
-          save.current(true);
+          save(true);
           if (next && !credits.dismissed) goTo(next.number);
         }}
         onError={stream.onFailed}

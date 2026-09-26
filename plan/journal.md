@@ -62,3 +62,14 @@ One line per decision taken while rewriting. Longer reasoning goes in
   of the rare side season whose metadata was right.
 - 2026-09-24 - Skip settings wait for the settings page. Until then the player behaves as the
   previous app did by default: skip button shown, next episode chained, no automatic skip.
+- 2026-09-25 - No auto update in the app for now. The previous one had none: the hub installed
+  and updated it, and the hub is out of scope (D4). How this repository's builds reach users
+  is decided with the release pipeline, which decides the mechanism.
+- 2026-09-25 - Discord Rich Presence speaks Discord's local protocol itself, over node:net:
+  a pipe, a handshake and json frames. `discord-rpc` was last published in 2021 and pulls a
+  dependency straight from GitHub; `@xhayper/discord-rpc` brings a REST client for one call.
+  The previous app's elapsed time never showed: it passed `timestamps`, which that library
+  ignored for `startTimestamp`. Presence is on until the settings page offers to turn it off.
+- 2026-09-25 - A development build does not register the nartya:// scheme, which would take
+  links away from the installed app. Deep links only open anime pages until the profile and
+  watch party slices bring their own routes.

@@ -9,7 +9,7 @@ Last updated: 2026-09-25.
 
 - **Phases 1 and 2**, and the phase 0 audits. Guard rails, CI on three systems, gitleaks,
   `check-style`, metrics, config, Supabase client, session store, platform contract.
-- **Phase 3, main process**, except the three items under Next: url safety, byte ranges, friendly
+- **Phase 3, main process**: url safety, byte ranges, friendly
   errors, api base, OAuth loopback, DoH, logger, source recipe, video extraction, provider
   fetch (gzip, deflate and brotli since 2026-09-23), local proxy, demo recipe, downloads,
   cast with its fake receiver.
@@ -33,6 +33,9 @@ Last updated: 2026-09-25.
   series' episodes the api fills them with.
 - **Slice 5, downloads** (2026-09-25). From the anime page, a downloads page grouped by anime,
   and a downloaded episode played from disk, streamed instead when its file is gone or fails.
+- **Phase 3, finished** (2026-09-25). `nartya://anime/<slug>` opens the anime, held until the
+  app is signed in. Discord Rich Presence over Discord's own pipe, checked against a running
+  Discord. Auto update moved to the release item.
 - **Offline** (2026-09-25). The app opens on the stored session with no network, moves to
   the downloads page once the api has missed three probes, and plays a download from its
   record when the api is out of reach, chaining to the next downloaded episode.
@@ -45,20 +48,19 @@ Last updated: 2026-09-25.
 The writing switch (D15) happened on 2026-09-23: all new code is written here. What is left
 leads to the production switch, whose criteria are in [publication.md](publication.md).
 
-1. **Phase 3 leftovers:** deep link, auto update, Discord RPC.
-2. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
+1. Slices 6 and 7: profile and lists, settings and legal pages. The settings page takes the
    skip settings (auto chaining, skip button, auto skip) and the audio boost.
-3. Contributor setup: the schema published (phase 5), demo catalog data (D12).
-4. Build and release from this repository; `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
+2. Contributor setup: the schema published (phase 5), demo catalog data (D12).
+3. Build and release from this repository, and how builds update (the hub did it before); `ARCHITECTURE`, `CONTRIBUTING`, `SECURITY`.
    The packaged app will open the previous app's data folder (`%APPDATA%\nartya`), whose
    downloads index is an electron-store file (`{ items, root }`), not ours: it needs a
    migration, and removing an entry must never delete a folder this code did not create.
    Development runs in `nartya-dev` since 2026-09-25, after a dev build deleted a video the
    installed app had downloaded.
-5. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
+4. Small: the player's own labels ("Play Speed") are still in English, and WebGPU stays off
    on Linux drivers Chromium blocklists, which the previous app forced on. Cast and content
    warnings in the player.
-6. **In `nartya-api-v2`**, not done here: it fills films, OAV and side seasons with the main
+5. **In `nartya-api-v2`**, not done here: it fills films, OAV and side seasons with the main
    series' episodes, which the client now hides; and a native title reduced to a digit
    ("第2期" to "2") matched "Ranma 1/2", fixed locally but not committed.
 

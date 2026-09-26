@@ -3,6 +3,8 @@ export type Config = {
   supabaseAnonKey: string;
   apiBase: string | null;
   captchaSiteKey: string | null;
+  discordClientId: string | null;
+  siteUrl: string | null;
 };
 
 export type ConfigResult = { ok: true; config: Config } | { ok: false; missing: string[] };
@@ -12,6 +14,8 @@ type Env = {
   VITE_SUPABASE_ANON_KEY?: string | undefined;
   VITE_API_BASE?: string | undefined;
   VITE_TURNSTILE_SITE_KEY?: string | undefined;
+  VITE_DISCORD_RPC_CLIENT_ID?: string | undefined;
+  VITE_SITE_URL?: string | undefined;
 };
 
 export function parseConfig(env: Env): ConfigResult {
@@ -25,6 +29,8 @@ export function parseConfig(env: Env): ConfigResult {
 
   const apiBase = env.VITE_API_BASE?.trim();
   const captchaSiteKey = env.VITE_TURNSTILE_SITE_KEY?.trim();
+  const discordClientId = env.VITE_DISCORD_RPC_CLIENT_ID?.trim();
+  const siteUrl = env.VITE_SITE_URL?.trim();
   return {
     ok: true,
     config: {
@@ -33,6 +39,9 @@ export function parseConfig(env: Env): ConfigResult {
       apiBase: apiBase ? apiBase.replace(/\/+$/, "") : null,
       // Optional: only a project with bot protection turned on refuses calls without it.
       captchaSiteKey: captchaSiteKey || null,
+      discordClientId: discordClientId && /^\d+$/.test(discordClientId) ? discordClientId : null,
+      // Discord only takes https buttons.
+      siteUrl: siteUrl?.startsWith("https://") ? siteUrl.replace(/\/+$/, "") : null,
     },
   };
 }

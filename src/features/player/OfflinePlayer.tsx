@@ -9,7 +9,8 @@ import { episodeLabel } from "./episode-label.ts";
 import { openOffline } from "./offline-open.ts";
 import { Player, type PlayerSource } from "./Player.tsx";
 import { PlayerStatus } from "./PlayerStatus.tsx";
-import { episodeKey, SAVE_EVERY_MS, type Progress, type SaveWhat } from "./progress.ts";
+import { episodeKey, type Progress } from "./progress.ts";
+import { useProgressSaver } from "./useProgressSaver.ts";
 
 const MISSING = "Fichier hors ligne introuvable. Il a peut-être été supprimé.";
 const FAILED = "La lecture du fichier hors ligne a échoué.";
@@ -50,28 +51,10 @@ export function OfflinePlayer({ item, progress, userId, onLeave, onPick }: Offli
     };
   }, [key, progress, userId]);
 
-  const watching = useRef<SaveWhat | null>(null);
-  const save = useRef<(force: boolean) => void>(() => undefined);
-  save.current = (force) => {
-    const what = watching.current;
-    if (!what || what.duration <= 0) return;
-    if (force) watching.current = null;
-    void progress.save(userId, what, force);
-  };
-
-  useEffect(() => {
-    const id = setInterval(() => save.current(false), SAVE_EVERY_MS);
-    const onLeaving = (): void => save.current(true);
-    window.addEventListener("pagehide", onLeaving);
-    return () => {
-      clearInterval(id);
-      window.removeEventListener("pagehide", onLeaving);
-      save.current(true);
-    };
-  }, [key]);
+  const { watching, save } = useProgressSaver(progress, userId, key);
 
   const goNext = (): void => {
-    save.current(true);
+    save(true);
     if (next) onPick(next);
   };
 

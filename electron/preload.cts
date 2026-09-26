@@ -44,6 +44,10 @@ const platform: Platform = {
       return () => ipcRenderer.removeListener("navigation-pending", relay);
     },
   },
+  discord: {
+    start: (clientId) => invoke("discord-start", clientId),
+    set: (presence) => invoke("discord-presence", presence),
+  },
 };
 
 contextBridge.exposeInMainWorld("platform", platform);

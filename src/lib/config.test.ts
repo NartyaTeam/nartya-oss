@@ -40,3 +40,23 @@ test("the captcha key is optional, and blank is the same as absent", () => {
   const given = parseConfig({ ...complete, VITE_TURNSTILE_SITE_KEY: " 0x4AAAAAAEFfy " });
   assert.equal(given.ok && given.config.captchaSiteKey, "0x4AAAAAAEFfy");
 });
+
+test("the Discord application id is a number, or nothing", () => {
+  const read = (id: string) => {
+    const result = parseConfig({ ...complete, VITE_DISCORD_RPC_CLIENT_ID: id });
+    return result.ok ? result.config.discordClientId : undefined;
+  };
+  assert.equal(read(" 1234567890 "), "1234567890");
+  assert.equal(read("not-an-id"), null);
+  assert.equal(read(""), null);
+});
+
+test("the site url is https only, without its trailing slash", () => {
+  const read = (url: string) => {
+    const result = parseConfig({ ...complete, VITE_SITE_URL: url });
+    return result.ok ? result.config.siteUrl : undefined;
+  };
+  assert.equal(read("https://site.test/"), "https://site.test");
+  assert.equal(read("http://site.test"), null);
+  assert.equal(read(""), null);
+});

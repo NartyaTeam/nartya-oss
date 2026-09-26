@@ -5,6 +5,7 @@ import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
 import { useDownloads } from "./features/downloads/store.ts";
 import { DeepLinks } from "./features/navigation/DeepLinks.tsx";
+import { BrowsingPresence } from "./features/presence/BrowsingPresence.tsx";
 import { OfflineRedirect } from "./features/network/OfflineRedirect.tsx";
 import { useNetwork, type Probe } from "./features/network/store.ts";
 import { activeTier, downloadSlots } from "./features/session/premium.ts";
@@ -77,6 +78,7 @@ export function SignedIn({
     <HashRouter>
       <OfflineRedirect />
       <DeepLinks />
+      <BrowsingPresence />
       <Routes>
         <Route
           path="/watch/:slug"

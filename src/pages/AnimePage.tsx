@@ -11,6 +11,7 @@ import { resumeLink, watchLink } from "../features/player/resume.ts";
 import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
+import { usePresence } from "../features/presence/usePresence.ts";
 import { Empty } from "../ui/Empty.tsx";
 import { firstSeason } from "../features/anime/season-groups.ts";
 
@@ -70,6 +71,8 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
     for (const [key, value] of Object.entries(patch)) next.set(key, value);
     setParams(next, { replace: true });
   }
+
+  usePresence(card.data ? { kind: "choosing", slug, title: card.data.anime.title } : null);
 
   if (!card.data && card.loading) return <Skeleton />;
 

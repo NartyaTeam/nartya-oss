@@ -10,6 +10,7 @@ import { getPlatform } from "./lib/platform.ts";
 import { createProgress } from "./features/player/progress.ts";
 import { createResourceStore } from "./lib/resource-store.ts";
 import { createSupabaseClient } from "./lib/supabase.ts";
+import { startPresence } from "./features/presence/usePresence.ts";
 import { MissingConfig } from "./ui/MissingConfig.tsx";
 import "./index.css";
 
@@ -22,6 +23,7 @@ function start(): JSX.Element {
   if (!result.ok) return <MissingConfig missing={result.missing} />;
 
   const { config } = result;
+  startPresence(config.discordClientId, config.siteUrl);
   const client = createSupabaseClient(config);
   const bridge = getPlatform()?.auth ?? null;
 

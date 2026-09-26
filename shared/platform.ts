@@ -1,4 +1,5 @@
 import type { DownloadItem, DownloadOutcome, DownloadRequest } from "./downloads.ts";
+import type { Presence } from "./presence.ts";
 
 export type OsPlatform = "darwin" | "win32" | "linux";
 
@@ -26,7 +27,9 @@ export type Channel =
   | "downloads-set-slots"
   | "downloads-changed"
   | "navigation-take"
-  | "navigation-pending";
+  | "navigation-pending"
+  | "discord-start"
+  | "discord-presence";
 
 // Sign in happens in the system browser, so the app never sees the provider's page. The
 // redirect lands on a loopback server the main process owns, which hands back the url.
@@ -71,10 +74,17 @@ export type NavigationBridge = {
   onPending: (listener: () => void) => () => void;
 };
 
+// Discord not running, or closed later, is not an error: the presence waits for it.
+export type DiscordBridge = {
+  start: (clientId: string) => Promise<void>;
+  set: (presence: Presence | null) => Promise<void>;
+};
+
 export type Platform = {
   getAppInfo: () => Promise<AppInfo>;
   auth: AuthBridge;
   stream: StreamBridge;
   downloads: DownloadsBridge;
   navigation: NavigationBridge;
+  discord: DiscordBridge;
 };
