@@ -1,4 +1,5 @@
 import { ArrowUpRight, Megaphone, Play, Star } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../ui/Button.tsx";
 import { browseGenreFor } from "../../catalog/genres.ts";
@@ -103,9 +104,10 @@ type HeaderProps = {
   seasonCover: string | null;
   seasonSynopsis: string | null;
   resume: { to: string; label: string } | null;
+  favorite: ReactNode;
 };
 
-export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: HeaderProps) {
+export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume, favorite }: HeaderProps) {
   const { anime, meta, images } = page;
   const poster = seasonCover ?? images?.poster ?? anime.poster;
   const banner = images?.fanart ?? images?.banner;
@@ -142,14 +144,17 @@ export function AnimeHeader({ page, seasonCover, seasonSynopsis, resume }: Heade
               <div className="aspect-[2/3] w-full bg-surface-2" />
             )}
           </div>
-          {resume && (
-            <Link to={resume.to} className="mt-3 block">
-              <Button className="w-full whitespace-nowrap py-3">
-                <Play size={18} className="shrink-0 fill-current" />
-                {resume.label}
-              </Button>
-            </Link>
-          )}
+          <div className="mt-3 flex justify-end gap-2">
+            {resume && (
+              <Link to={resume.to} className="min-w-0 flex-1">
+                <Button className="h-12 w-full whitespace-nowrap">
+                  <Play size={18} className="shrink-0 fill-current" />
+                  {resume.label}
+                </Button>
+              </Link>
+            )}
+            {favorite}
+          </div>
         </div>
 
         <div className="flex-1 pt-2 md:pt-20">

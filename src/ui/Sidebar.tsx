@@ -1,4 +1,4 @@
-import { Clapperboard, Download, LogOut, Search, User } from "lucide-react";
+import { Clapperboard, Download, Heart, LogOut, Search, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
@@ -10,6 +10,7 @@ const TRANS = "250ms cubic-bezier(0.4,0,0.2,1)";
 const TABS: { to: string; icon: LucideIcon; label: string }[] = [
   { to: "/", icon: Clapperboard, label: "Animes" },
   { to: "/recherche", icon: Search, label: "Recherche" },
+  { to: "/favoris", icon: Heart, label: "Favoris" },
 ];
 
 // Downloads need the desktop app: in a browser the entry would lead nowhere useful.

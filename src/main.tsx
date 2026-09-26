@@ -8,6 +8,7 @@ import { createApi } from "./lib/api.ts";
 import { readConfig } from "./lib/config.ts";
 import { getPlatform } from "./lib/platform.ts";
 import { createProgress } from "./features/player/progress.ts";
+import { createFavorites } from "./features/favorites/favorites.ts";
 import { createResourceStore } from "./lib/resource-store.ts";
 import { createSupabaseClient } from "./lib/supabase.ts";
 import { startPresence } from "./features/presence/usePresence.ts";
@@ -53,6 +54,7 @@ function start(): JSX.Element {
       catalog={api ? createCatalog(api) : null}
       anime={api ? createAnime(api) : null}
       progress={createProgress(client)}
+      favorites={createFavorites(client)}
       store={createResourceStore()}
       reachable={api ? api.reachable : null}
     />

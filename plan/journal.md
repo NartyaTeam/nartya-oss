@@ -73,3 +73,8 @@ One line per decision taken while rewriting. Longer reasoning goes in
 - 2026-09-25 - A development build does not register the nartya:// scheme, which would take
   links away from the installed app. Deep links only open anime pages until the profile and
   watch party slices bring their own routes.
+- 2026-09-26 - Favorites are reordered with `@dnd-kit`, as in the previous app. Native drag and
+  drop was tried first: it drags a translucent snapshot of the card and the others only move
+  on drop, which felt like dragging an image off a web page. `@dnd-kit` moves the card itself
+  and makes room live, and brings auto scroll and keyboard reordering. Its classic line was
+  last published in December 2024 and needs only `tslib` and its own accessibility module.

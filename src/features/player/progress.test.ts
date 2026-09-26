@@ -4,6 +4,7 @@ import {
   cleanTitle,
   episodeKey,
   foldByEpisode,
+  lastPerAnime,
   readResume,
   rowFor,
   shouldSave,
@@ -95,4 +96,18 @@ test("a resume needs a season and an episode to be one", () => {
     }),
     { seasonId: "saison1", episodeNumber: 3, language: "vf", percent: 42, completed: false },
   );
+});
+
+test("each anime shows the episode watched last, not the furthest", () => {
+  const rows = [
+    { anime_slug: "a", episode_number: 3, progress_percent: 41.6, completed: false },
+    { anime_slug: "b", episode_number: 12, progress_percent: 100, completed: true },
+    { anime_slug: "a", episode_number: 7, progress_percent: 100, completed: true },
+    { anime_slug: "c", episode_number: "x" },
+  ];
+  assert.deepEqual(lastPerAnime(rows), {
+    a: { episodeNumber: 3, percent: 42, completed: false },
+    b: { episodeNumber: 12, percent: 100, completed: true },
+  });
+  assert.deepEqual(lastPerAnime(null), {});
 });

@@ -12,12 +12,20 @@ import type { ApiResult } from "../lib/api.ts";
 import type { ResourceStore } from "../lib/resource-store.ts";
 import { useResource } from "../lib/use-resource.ts";
 import { usePresence } from "../features/presence/usePresence.ts";
+import { FavoriteButton } from "../features/favorites/FavoriteButton.tsx";
+import type { Favorites } from "../features/favorites/favorites.ts";
 import { Empty } from "../ui/Empty.tsx";
 import { firstSeason } from "../features/anime/season-groups.ts";
 
 const NO_SEASON: SeasonEpisodes = { name: null, description: null, cover: null, episodes: [] };
 
-type AnimeProps = { anime: Anime; store: ResourceStore; progress: Progress; userId: string };
+type AnimeProps = {
+  anime: Anime;
+  store: ResourceStore;
+  progress: Progress;
+  favorites: Favorites;
+  userId: string;
+};
 
 function Skeleton() {
   return (
@@ -33,7 +41,7 @@ function Skeleton() {
   );
 }
 
-export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
+export function AnimePage({ anime, store, progress, favorites, userId }: AnimeProps) {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -95,6 +103,17 @@ export function AnimePage({ anime, store, progress, userId }: AnimeProps) {
         seasonCover={list.data?.cover ?? null}
         seasonSynopsis={list.data?.description ?? null}
         resume={resumeLink(slug, last.data ?? null, season?.id ?? null, lang)}
+        favorite={
+          <FavoriteButton
+            api={favorites}
+            favorite={{
+              slug,
+              title: card.data.anime.title,
+              cover: card.data.images?.poster ?? card.data.anime.poster,
+              genre: card.data.meta?.genres[0] ?? null,
+            }}
+          />
+        }
       />
       {season && (
         <SeasonsSection

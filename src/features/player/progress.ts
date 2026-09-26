@@ -91,6 +91,28 @@ export function readResume(row: unknown): Resume | null {
   };
 }
 
+export type LastWatched = { episodeNumber: number; percent: number; completed: boolean };
+
+// Rows come newest first, so the first one met for an anime is where the viewer stands.
+export function lastPerAnime(rows: unknown): Record<string, LastWatched> {
+  if (!Array.isArray(rows)) return {};
+  const map: Record<string, LastWatched> = {};
+  for (const entry of rows) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const read = entry as Record<string, unknown>;
+    const slug = read["anime_slug"];
+    const episodeNumber = read["episode_number"];
+    if (typeof slug !== "string" || typeof episodeNumber !== "number" || map[slug]) continue;
+    const percent = read["progress_percent"];
+    map[slug] = {
+      episodeNumber,
+      percent: Math.round(typeof percent === "number" ? percent : 0),
+      completed: read["completed"] === true,
+    };
+  }
+  return map;
+}
+
 // Several languages of one episode each carry their own row; the screen shows one tick,
 // so the furthest of them is what counts.
 export function foldByEpisode(rows: unknown): Record<string, Watched> {
@@ -151,6 +173,20 @@ export function createProgress(client: SupabaseClient) {
         .eq("user_id", userId)
         .eq("anime_slug", slug);
       return foldByEpisode(data);
+    },
+
+    lastWatchedIn: async (
+      userId: string,
+      slugs: string[],
+    ): Promise<Record<string, LastWatched>> => {
+      if (slugs.length === 0) return {};
+      const { data } = await client
+        .from("episode_progress")
+        .select("anime_slug, episode_number, progress_percent, completed")
+        .eq("user_id", userId)
+        .in("anime_slug", slugs)
+        .order("updated_at", { ascending: false });
+      return lastPerAnime(data);
     },
 
     save: async (userId: string, what: SaveWhat, force = false): Promise<void> => {

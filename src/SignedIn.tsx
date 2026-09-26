@@ -4,6 +4,8 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import type { Anime } from "./features/anime/anime.ts";
 import type { Catalog } from "./features/catalog/catalog.ts";
 import { useDownloads } from "./features/downloads/store.ts";
+import type { Favorites } from "./features/favorites/favorites.ts";
+import { useFavorites } from "./features/favorites/store.ts";
 import { DeepLinks } from "./features/navigation/DeepLinks.tsx";
 import { BrowsingPresence } from "./features/presence/BrowsingPresence.tsx";
 import { OfflineRedirect } from "./features/network/OfflineRedirect.tsx";
@@ -16,6 +18,7 @@ import type { Progress } from "./features/player/progress.ts";
 import { AnimePage } from "./pages/AnimePage.tsx";
 import { CatalogHomePage } from "./pages/CatalogHomePage.tsx";
 import { DownloadsPage } from "./pages/DownloadsPage.tsx";
+import { FavoritesPage } from "./pages/FavoritesPage.tsx";
 import { GenrePage } from "./pages/GenrePage.tsx";
 import { SearchPage } from "./pages/SearchPage.tsx";
 import { WatchPage } from "./pages/WatchPage.tsx";
@@ -28,6 +31,7 @@ type SignedInProps = {
   catalog: Catalog | null;
   anime: Anime | null;
   progress: Progress;
+  favorites: Favorites;
   store: ResourceStore;
   reachable: Probe | null;
   onSignOut: () => void;
@@ -41,10 +45,13 @@ export function SignedIn({
   catalog,
   anime,
   progress,
+  favorites,
   store,
   reachable,
   onSignOut,
 }: SignedInProps) {
+  const userId = session.user.id;
+  useEffect(() => void useFavorites.getState().load(favorites, userId), [favorites, userId]);
   useEffect(() => useDownloads.getState().watch(), []);
   useEffect(() => (reachable ? useNetwork.getState().watch(reachable) : undefined), [reachable]);
   const slots = downloadSlots(activeTier(profile, Date.now()));
@@ -82,9 +89,7 @@ export function SignedIn({
       <Routes>
         <Route
           path="/watch/:slug"
-          element={
-            <WatchPage anime={anime} store={store} progress={progress} userId={session.user.id} />
-          }
+          element={<WatchPage anime={anime} store={store} progress={progress} userId={userId} />}
         />
         <Route
           path="*"
@@ -93,6 +98,12 @@ export function SignedIn({
               <Route path="/" element={<CatalogHomePage catalog={catalog} store={store} />} />
               <Route path="/recherche" element={<SearchPage catalog={catalog} store={store} />} />
               <Route path="/telechargements" element={<DownloadsPage anime={anime} />} />
+              <Route
+                path="/favoris"
+                element={
+                  <FavoritesPage favorites={favorites} progress={progress} userId={userId} />
+                }
+              />
               <Route path="/genre/:genre" element={<GenrePage catalog={catalog} store={store} />} />
               <Route
                 path="/anime/:slug"
@@ -101,7 +112,8 @@ export function SignedIn({
                     anime={anime}
                     store={store}
                     progress={progress}
-                    userId={session.user.id}
+                    favorites={favorites}
+                    userId={userId}
                   />
                 }
               />

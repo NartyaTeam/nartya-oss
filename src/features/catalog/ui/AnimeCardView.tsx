@@ -1,6 +1,7 @@
-import { Play, Star } from "lucide-react";
+import { Heart, Play, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useFavorites } from "../../favorites/store.ts";
 import type { AnimeCard } from "../types.ts";
 
 type CardProps = { anime: AnimeCard; index?: number };
@@ -10,6 +11,9 @@ type CardProps = { anime: AnimeCard; index?: number };
 export function AnimeCardView({ anime, index }: CardProps) {
   const image = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const favorite = useFavorites(
+    (state) => state.items?.some((entry) => entry.slug === anime.slug) ?? false,
+  );
 
   // A cover already in cache never fires load, and a fast scroll would leave a black hole
   // where the sweep should be.
@@ -51,6 +55,15 @@ export function AnimeCardView({ anime, index }: CardProps) {
         {index !== undefined && (
           <span className="absolute left-1.5 top-1 font-display text-xl font-extrabold leading-none text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
             {String(index + 1).padStart(2, "0")}
+          </span>
+        )}
+
+        {favorite && (
+          <span
+            title="En favori"
+            className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 backdrop-blur-sm"
+          >
+            <Heart size={12} className="fill-primary text-primary" />
           </span>
         )}
 
